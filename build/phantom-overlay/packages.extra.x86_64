@@ -1,0 +1,18 @@
+# Phantom OS v1 base desktop stack on top of archiso releng profile
+hyprland
+hyprlock
+waybar
+rofi-wayland
+mako
+kitty
+thunar
+grim
+slurp
+wl-clipboard
+pavucontrol
+playerctl
+sddm
+networkmanager
+network-manager-applet
+zram-generator
+swww

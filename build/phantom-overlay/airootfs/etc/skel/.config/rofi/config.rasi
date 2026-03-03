@@ -1,0 +1,51 @@
+configuration {
+  modi: "drun,run";
+  show-icons: true;
+  display-drun: "Apps";
+  drun-display-format: "{name}";
+  hover-select: true;
+}
+
+* {
+  bg: #0A0A0F;
+  surface: #141420;
+  panel: #1A1A2E;
+  accent: #00F0FF;
+  accent2: #7B68EE;
+  fg: #E0E0E8;
+  muted: #6B6B80;
+}
+
+window {
+  width: 52%;
+  border: 2px;
+  border-color: @accent;
+  border-radius: 18px;
+  background-color: @bg;
+}
+
+inputbar {
+  background-color: @panel;
+  text-color: @fg;
+  border-radius: 14px;
+  padding: 12px;
+  margin: 12px;
+}
+
+listview {
+  columns: 4;
+  lines: 3;
+  spacing: 8px;
+  background-color: transparent;
+  padding: 8px 12px 16px;
+}
+
+element {
+  border-radius: 12px;
+  padding: 10px;
+}
+
+element selected {
+  background-color: @accent2;
+  text-color: @fg;
+}

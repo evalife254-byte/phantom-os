@@ -1,0 +1,4 @@
+PHANTOM_NAME="Phantom OS"
+PHANTOM_VERSION="v1-dev"
+PHANTOM_CODENAME="Ghost Protocol"
+BASE_DISTRO="Arch Linux"
