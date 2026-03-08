@@ -14,51 +14,64 @@ jobs:
   build-iso:
     name: Build ISO
     runs-on: ubuntu-latest
-    container:
-      image: archlinux:latest
-      options: --privileged
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Arch Linux in Docker
+        run: |
+          docker run -d --name archiso-builder --privileged \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            archlinux:latest \
+            tail -f /dev/null
+
       - name: Update system and install dependencies
         run: |
-          pacman -Syu --noconfirm
-          pacman -S --noconfirm archiso git base-devel python
+          docker exec archiso-builder bash -c "
+            pacman -Syu --noconfirm
+            pacman -S --noconfirm archiso git base-devel python
+          "
 
       - name: Run bootstrap
-        run: ./scripts/bootstrap-phantom-v1.sh
+        run: docker exec archiso-builder bash -c "./scripts/bootstrap-phantom-v1.sh"
 
       - name: Apply overlay
-        run: ./scripts/apply-phantom-overlay.sh
+        run: docker exec archiso-builder bash -c "./scripts/apply-phantom-overlay.sh"
 
       - name: Validate overlay
-        run: ./scripts/validate-phantom-overlay.sh
+        run: docker exec archiso-builder bash -c "./scripts/validate-phantom-overlay.sh"
 
       - name: Build ISO
         run: |
-          # Low-RAM optimizations for GitHub Actions (7GB RAM)
-          export XZ_OPT="-T2 -9 --memlimit-compress=1024MiB"
-          export ZSTD_CLEVEL=19
-          export ZSTD_NBTHREADS=2
-          export MAKEFLAGS="-j2"
-          
-          # Create swap space if not already active
-          if ! swapon --show | grep -q /swapfile; then
-            if [ ! -f /swapfile ]; then
-              fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
-              chmod 600 /swapfile
-              mkswap /swapfile
+          docker exec archiso-builder bash -c "
+            # Low-RAM optimizations for GitHub Actions (7GB RAM)
+            export XZ_OPT='-T2 -9 --memlimit-compress=1024MiB'
+            export ZSTD_CLEVEL=19
+            export ZSTD_NBTHREADS=2
+            export MAKEFLAGS='-j2'
+            
+            # Create swap space if not already active
+            if ! swapon --show | grep -q /swapfile; then
+              if [ ! -f /swapfile ]; then
+                fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
+                chmod 600 /swapfile
+                mkswap /swapfile
+              fi
+              swapon /swapfile
             fi
-            swapon /swapfile
-          fi
-          
-          # Build with verbose output
-          mkarchiso -v -w ./work -o ./out ./build/archiso-profile
-          
-          # Remove swap
-          swapoff /swapfile || true
-          rm -f /swapfile
+            
+            # Build with verbose output
+            mkarchiso -v -w ./work -o ./out ./build/archiso-profile
+            
+            # Remove swap
+            swapoff /swapfile || true
+            rm -f /swapfile
+          "
+
+      - name: Stop container
+        if: always()
+        run: docker stop archiso-builder && docker rm archiso-builder
 
       - name: Get ISO filename
         id: iso
