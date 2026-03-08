@@ -9,7 +9,7 @@
 | Phase | Name | Status | Key Deliverables |
 |-------|------|--------|------------------|
 | 1 | DE Baseline & Overlay | **IN PROGRESS** | Hyprland config, Waybar, Rofi, Mako, theme.json, packages list, validation script, ISO build pipeline |
-| 2 | Three-Capsule Panel & Dock | NOT STARTED | Waybar three-zone layout (left/center/right capsules), floating glass dock, expanded dropdowns |
+| 2 | Three-Capsule Panel & Dock | **IN PROGRESS** | Waybar three-zone layout (left/center/right capsules), floating glass dock, expanded dropdowns |
 | 3 | Theme System & Settings | NOT STARTED | `phantom-theme` CLI, GUI theme editor, preset themes (Specter, Wraith, Eclipse, Daylight) |
 | 4 | Lock & Login Screens | **IN PROGRESS** | SDDM branded theme (split layout), hyprlock config, boot splash (Particle Assembly / Phantom Fade) |
 | 5 | Phantom Files | NOT STARTED | Custom file manager (GTK4/Qt6), dual-pane, tags, preview, integrated terminal, hex view |
@@ -54,18 +54,30 @@ build/phantom-overlay/
 
 ---
 
-## Phase 2 — Three-Capsule Panel & Dock
+## Phase 2 — Three-Capsule Panel & Dock (IN PROGRESS)
 
 ### Deliverables
-- Three-zone Waybar layout (left: resources/toggles, center: clock/calendar, right: notifications/media)
-- Expanded dropdown shades for each capsule
-- Floating glass dock (centered, auto-hide options)
-- Desktop widget (clock, now playing, user-placed icons)
+- [ ] Three-zone Waybar layout (left: resources/toggles, center: clock/calendar, right: notifications/media)
+- [ ] Expanded dropdown shades for each capsule
+- [x] Floating glass dock (centered, auto-hide)
+  - `nwg-dock-hyprland` with Ghost Protocol CSS styling
+  - Autostart in `hyprland.conf` with icon size 40, margin-bottom 8
+  - Launcher button wired to `rofi -show drun`
+  - Layer rules for blur + transparency
+- [ ] Desktop widget (clock, now playing, user-placed icons)
 
 ### Key Components
 - Waybar config rewrite for capsule grouping
-- Dock package selection (Wayland-native)
+- ~~Dock package selection (Wayland-native)~~ → `nwg-dock-hyprland`
 - `swww` wallpaper daemon integration
+
+### Key Files
+```
+build/phantom-overlay/
+  airootfs/etc/skel/.config/nwg-dock-hyprland/style.css
+  packages.extra.x86_64  (added nwg-dock-hyprland)
+  airootfs/etc/skel/.config/hypr/hyprland.conf  (dock autostart + layer rules)
+```
 
 ---
 
