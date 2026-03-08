@@ -1,0 +1,17 @@
+{
+  "name": "wraith",
+  "display_name": "Wraith",
+  "description": "Green matrix aesthetic with digital rain vibes",
+  "colors": {
+    "background": "#0A0F0A",
+    "surface": "#0F1A0F",
+    "panel": "#1A2E1A",
+    "accent_primary": "#00FF41",
+    "accent_secondary": "#39FF14",
+    "text_primary": "#E0F0E8",
+    "text_secondary": "#6B8B70",
+    "warning": "#FFA500",
+    "critical": "#FF4444",
+    "success": "#00FF41"
+  }
+}

@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Phantom OS GPU Auto-Detection and Setup
+# Detects GPU vendor and configures optimal drivers
+
+set -euo pipefail
+
+LOG_FILE="/var/log/phantom-gpu-setup.log"
+
+log() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+}
+
+detect_gpu() {
+  log "Detecting GPU hardware..."
+  
+  local nvidia=false
+  local amd=false
+  local intel=false
+  
+  # Check for NVIDIA
+  if lspci | grep -i 'vga.*nvidia' >/dev/null 2>&1; then
+    nvidia=true
+    log "Detected NVIDIA GPU"
+  fi
+  
+  # Check for AMD
+  if lspci | grep -i 'vga.*amd\|vga.*ati' >/dev/null 2>&1; then
+    amd=true
+    log "Detected AMD GPU"
+  fi
+  
+  # Check for Intel
+  if lspci | grep -i 'vga.*intel' >/dev/null 2>&1; then
+    intel=true
+    log "Detected Intel GPU"
+  fi
+  
+  # Configure based on detection
+  if $nvidia; then
+    setup_nvidia
+  fi
+  
+  if $amd; then
+    setup_amd
+  fi
+  
+  if $intel; then
+    setup_intel
+  fi
+  
+  if ! $nvidia && ! $amd && ! $intel; then
+    log "No discrete GPU detected, using generic drivers"
+  fi
+}
+
+setup_nvidia() {
+  log "Configuring NVIDIA GPU..."
+  
+  # Check if proprietary driver is available
+  if command -v nvidia-smi >/dev/null 2>&1; then
+    log "NVIDIA proprietary driver detected"
+    
+    # Enable DRM kernel mode setting
+    if ! grep -q "nvidia-drm.modeset=1" /etc/default/grub 2>/dev/null; then
+      log "Note: Add 'nvidia-drm.modeset=1' to kernel parameters for Wayland support"
+    fi
+    
+    # Set environment variables
+    cat > /etc/environment.d/10-nvidia.conf <<EOF
+# NVIDIA Wayland support
+GBM_BACKEND=nvidia-drm
+__GLX_VENDOR_LIBRARY_NAME=nvidia
+WLR_NO_HARDWARE_CURSORS=1
+EOF
+    
+  else
+    log "NVIDIA GPU detected but proprietary driver not installed"
+    log "Install with: sudo pacman -S nvidia nvidia-utils"
+  fi
+}
+
+setup_amd() {
+  log "Configuring AMD GPU..."
+  
+  # AMD drivers are built into kernel, just set optimal settings
+  cat > /etc/environment.d/10-amd.conf <<EOF
+# AMD GPU optimization
+RADV_PERFTEST=aco
+AMD_VULKAN_ICD=RADV
+EOF
+  
+  log "AMD GPU configured with RADV driver"
+}
+
+setup_intel() {
+  log "Configuring Intel GPU..."
+  
+  # Intel drivers are built into kernel
+  cat > /etc/environment.d/10-intel.conf <<EOF
+# Intel GPU optimization
+MESA_LOADER_DRIVER_OVERRIDE=iris
+EOF
+  
+  log "Intel GPU configured with Iris driver"
+}
+
+# Main execution
+if [[ $EUID -ne 0 ]]; then
+  echo "Error: This script requires root privileges" >&2
+  exit 1
+fi
+
+log "=== Phantom GPU Setup Started ==="
+detect_gpu
+log "=== Phantom GPU Setup Complete ==="
+
+echo ""
+echo "GPU setup complete. Check $LOG_FILE for details."
+echo "A reboot may be required for changes to take effect."

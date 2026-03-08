@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Phantom Video
+Comment=Video player for Phantom OS
+Exec=phantom-video %F
+Icon=phantom-video
+Terminal=false
+Categories=AudioVideo;Video;Player;
+Keywords=video;player;mpv;media;movie;
+StartupNotify=true
+MimeType=video/mp4;video/x-matroska;video/x-avi;video/x-matroska;video/webm;video/x-flv;video/x-mov;

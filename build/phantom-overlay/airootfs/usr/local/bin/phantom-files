@@ -1,0 +1,692 @@
+#!/usr/bin/env python3
+"""
+Phantom Files v2 - Enhanced File Manager for Phantom OS
+A modern, dual-pane file manager with Ghost Protocol theme
+Features: bookmarks, search, history, hidden files, improved terminal handling
+"""
+
+import gi
+import os
+import sys
+import subprocess
+import shutil
+import json
+from pathlib import Path
+from datetime import datetime
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, Adw, Gio, GLib, Gdk
+
+class PhantomFiles(Adw.ApplicationWindow):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title("Phantom Files")
+        self.set_default_size(1200, 700)
+        
+        # Current paths for dual panes
+        self.left_path = Path.home()
+        self.right_path = Path.home()
+        self.active_pane = 'left'
+        
+        # History for back/forward navigation
+        self.left_history = [Path.home()]
+        self.right_history = [Path.home()]
+        self.left_history_pos = 0
+        self.right_history_pos = 0
+        
+        # Clipboard
+        self.clipboard_items = []
+        self.clipboard_operation = None
+        
+        # Bookmarks
+        self.bookmarks = self.load_bookmarks()
+        
+        # Search state
+        self.search_active = False
+        self.search_results = []
+        
+        # Settings
+        self.show_hidden = False
+        
+        self.setup_ui()
+    def load_bookmarks(self):
+        """Load bookmarks from config file"""
+        bookmarks_file = Path.home() / '.config' / 'phantom' / 'files-bookmarks.json'
+        if bookmarks_file.exists():
+            try:
+                with open(bookmarks_file) as f:
+                    return json.load(f)
+            except:
+                pass
+        return {
+            'Home': str(Path.home()),
+            'Desktop': str(Path.home() / 'Desktop'),
+            'Documents': str(Path.home() / 'Documents'),
+            'Downloads': str(Path.home() / 'Downloads'),
+            'Pictures': str(Path.home() / 'Pictures'),
+            'Music': str(Path.home() / 'Music'),
+            'Videos': str(Path.home() / 'Videos'),
+            'Root': '/'
+        }
+    
+    def save_bookmarks(self):
+        """Save bookmarks to config file"""
+        bookmarks_file = Path.home() / '.config' / 'phantom' / 'files-bookmarks.json'
+        bookmarks_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(bookmarks_file, 'w') as f:
+            json.dump(self.bookmarks, f, indent=2)
+        
+    def apply_css(self):
+        """Apply Ghost Protocol theme"""
+        css_provider = Gtk.CssProvider()
+        css = """
+        window {
+            background-color: #0A0A0F;
+            color: #E0E0E8;
+        }
+        
+        .toolbar {
+            background-color: #1A1A2E;
+            border-bottom: 1px solid #00F0FF;
+            padding: 8px;
+        }
+        
+        .pane {
+            background-color: #141420;
+            border: 1px solid #1A1A2E;
+            border-radius: 8px;
+            margin: 4px;
+        }
+        
+        .pane.active {
+            border-color: #00F0FF;
+        }
+        
+        .path-bar {
+            background-color: #1A1A2E;
+            color: #E0E0E8;
+            padding: 8px;
+            border-radius: 6px;
+            margin: 4px;
+        }
+        
+        button {
+            background-color: #1A1A2E;
+            color: #E0E0E8;
+            border: 1px solid #00F0FF;
+            border-radius: 6px;
+            padding: 6px 12px;
+            margin: 2px;
+        }
+        
+        button:hover {
+            background-color: rgba(0, 240, 255, 0.15);
+        }
+        
+        button:active {
+            background-color: rgba(0, 240, 255, 0.25);
+        }
+        
+        entry {
+            background-color: #1A1A2E;
+            color: #E0E0E8;
+            border: 1px solid #00F0FF;
+            border-radius: 6px;
+            padding: 6px;
+        }
+        
+        .file-item {
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .file-item:hover {
+            background-color: rgba(0, 240, 255, 0.1);
+        }
+        
+        .file-item:selected {
+            background-color: rgba(0, 240, 255, 0.2);
+        }
+        
+        .statusbar {
+            background-color: #1A1A2E;
+            border-top: 1px solid #00F0FF;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+        .hidden-toggle:checked {
+            background-color: #7B68EE;
+        }
+        """
+        css_provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+    
+    def setup_ui(self):
+        """Setup the main UI"""
+        # Main box
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(main_box)
+        
+        # Toolbar
+        toolbar = self.create_toolbar()
+        toolbar.add_css_class('toolbar')
+        main_box.append(toolbar)
+        
+        # Dual pane container
+        paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        paned.set_vexpand(True)
+        main_box.append(paned)
+        
+        # Left pane
+        self.left_pane = self.create_pane('left')
+        paned.set_start_child(self.left_pane)
+        
+        # Right pane
+        self.right_pane = self.create_pane('right')
+        paned.set_end_child(self.right_pane)
+        
+        # Status bar
+        self.statusbar = Gtk.Label(label="Ready")
+        self.statusbar.set_xalign(0)
+        self.statusbar.add_css_class('statusbar')
+        main_box.append(self.statusbar)
+        
+        # Load initial directories
+        self.refresh_pane('left')
+        self.refresh_pane('right')
+        
+    def create_toolbar(self):
+        """Create toolbar with navigation and actions"""
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        
+        # Back button
+        back_btn = Gtk.Button(label="←")
+        back_btn.connect('clicked', self.on_back)
+        toolbar.append(back_btn)
+        
+        # Forward button
+        forward_btn = Gtk.Button(label="→")
+        forward_btn.connect('clicked', self.on_forward)
+        toolbar.append(forward_btn)
+        
+        # Up button
+        up_btn = Gtk.Button(label="↑")
+        up_btn.connect('clicked', self.on_up)
+        toolbar.append(up_btn)
+        
+        # Home button
+        home_btn = Gtk.Button(label="🏠")
+        home_btn.connect('clicked', self.on_home)
+        toolbar.append(home_btn)
+        
+        # Separator
+        toolbar.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+        
+        # New folder
+        new_folder_btn = Gtk.Button(label="📁+")
+        new_folder_btn.connect('clicked', self.on_new_folder)
+        toolbar.append(new_folder_btn)
+        
+        # Copy
+        copy_btn = Gtk.Button(label="📋")
+        copy_btn.connect('clicked', self.on_copy)
+        toolbar.append(copy_btn)
+        
+        # Cut
+        cut_btn = Gtk.Button(label="✂️")
+        cut_btn.connect('clicked', self.on_cut)
+        toolbar.append(cut_btn)
+        
+        # Paste
+        paste_btn = Gtk.Button(label="📄")
+        paste_btn.connect('clicked', self.on_paste)
+        toolbar.append(paste_btn)
+        
+        # Delete
+        delete_btn = Gtk.Button(label="🗑️")
+        delete_btn.connect('clicked', self.on_delete)
+        toolbar.append(delete_btn)
+        
+        # Separator
+        toolbar.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+        
+        # Terminal
+        terminal_btn = Gtk.Button(label="⌨️")
+        terminal_btn.connect('clicked', self.on_terminal)
+        toolbar.append(terminal_btn)
+        
+        # Refresh
+        refresh_btn = Gtk.Button(label="🔄")
+        refresh_btn.connect('clicked', self.on_refresh)
+        toolbar.append(refresh_btn)
+        
+        return toolbar
+    
+    def create_pane(self, side):
+        """Create a file browser pane"""
+        pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        pane_box.add_css_class('pane')
+        
+        # Path bar
+        path_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        path_box.add_css_class('path-bar')
+        
+        path_label = Gtk.Label(label="Path:")
+        path_box.append(path_label)
+        
+        path_entry = Gtk.Entry()
+        path_entry.set_hexpand(True)
+        path_entry.connect('activate', lambda e: self.on_path_changed(side, e.get_text()))
+        path_box.append(path_entry)
+        
+        pane_box.append(path_box)
+        
+        # Scrolled window for file list
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        
+        # File list
+        file_list = Gtk.ListBox()
+        file_list.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        file_list.connect('row-activated', lambda lb, row: self.on_file_activated(side, row))
+        scrolled.set_child(file_list)
+        
+        pane_box.append(scrolled)
+        
+        # Store references
+        if side == 'left':
+            self.left_path_entry = path_entry
+            self.left_file_list = file_list
+        else:
+            self.right_path_entry = path_entry
+            self.right_file_list = file_list
+        
+        # Click handler to set active pane
+        click = Gtk.GestureClick()
+        click.connect('pressed', lambda g, n, x, y: self.set_active_pane(side))
+        pane_box.add_controller(click)
+        
+        return pane_box
+    
+    def set_active_pane(self, side):
+        """Set which pane is active"""
+        self.active_pane = side
+        
+        # Update visual indicators
+        if side == 'left':
+            self.left_pane.add_css_class('active')
+            self.right_pane.remove_css_class('active')
+        else:
+            self.right_pane.add_css_class('active')
+            self.left_pane.remove_css_class('active')
+    
+    def refresh_pane(self, side):
+        """Refresh file list for a pane"""
+        if side == 'left':
+            path = self.left_path
+            path_entry = self.left_path_entry
+            file_list = self.left_file_list
+        else:
+            path = self.right_path
+            path_entry = self.right_path_entry
+            file_list = self.right_file_list
+        
+        # Update path entry
+        path_entry.set_text(str(path))
+        
+        # Clear existing items
+        while True:
+            row = file_list.get_row_at_index(0)
+            if row is None:
+                break
+            file_list.remove(row)
+        
+        # Add parent directory entry
+        if path != Path('/'):
+            parent_row = self.create_file_row('..', path.parent, True)
+            file_list.append(parent_row)
+        
+        # List directory contents
+        try:
+            items = sorted(path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
+            
+            for item in items:
+                if item.name.startswith('.') and not getattr(self, 'show_hidden', False):
+                    continue
+                
+                row = self.create_file_row(item.name, item, item.is_dir())
+                file_list.append(row)
+                
+        except PermissionError:
+            self.show_error(f"Permission denied: {path}")
+        except Exception as e:
+            self.show_error(f"Error reading directory: {e}")
+        
+        # Update status
+        self.update_status()
+    
+    def create_file_row(self, name, path, is_dir):
+        """Create a row for a file/directory"""
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        box.add_css_class('file-item')
+        
+        # Icon - use emoji instead of file paths
+        icon = self.get_file_icon(name, is_dir)
+        icon_label = Gtk.Label(label=icon)
+        box.append(icon_label)
+        
+        # Name
+        name_label = Gtk.Label(label=name)
+        name_label.set_xalign(0)
+        name_label.set_hexpand(True)
+        box.append(name_label)
+        
+        # Size/Modified
+        if path.exists() and not is_dir and name != '..':
+            try:
+                size = path.stat().st_size
+                size_str = self.format_size(size)
+                size_label = Gtk.Label(label=size_str)
+                size_label.set_opacity(0.7)
+                box.append(size_label)
+            except:
+                pass
+        
+        # Store path in row data
+        row = Gtk.ListBoxRow()
+        row.set_child(box)
+        row.path = path
+        row.is_dir = is_dir
+        
+        return row
+    
+    def get_file_icon(self, name, is_dir):
+        """Get emoji icon for file type"""
+        if name == '..':
+            return '⬆️'
+        if is_dir:
+            return '📁'
+        
+        ext = name.lower().split('.')[-1] if '.' in name else ''
+        icons = {
+            'mp3': '🎵', 'wav': '🎵', 'flac': '🎵', 'ogg': '🎵', 'm4a': '🎵',
+            'mp4': '🎬', 'mkv': '🎬', 'avi': '🎬', 'mov': '🎬', 'webm': '🎬',
+            'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'svg': '🖼️', 'webp': '🖼️',
+            'zip': '📦', 'tar': '📦', 'gz': '📦', 'bz2': '📦', 'xz': '📦', '7z': '📦', 'rar': '📦',
+            'txt': '📄', 'md': '📝', 'py': '🐍', 'js': '📜', 'html': '🌐', 'css': '🎨',
+            'pdf': '📕', 'doc': '📘', 'docx': '📘', 'xls': '📗', 'xlsx': '📗',
+            'iso': '💿', 'img': '💿',
+            'sh': '⚡', 'bash': '⚡', 'zsh': '⚡',
+        }
+        return icons.get(ext, '📄')
+    
+    def format_size(self, size):
+        """Format file size"""
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if size < 1024:
+                return f"{size:.1f} {unit}"
+            size /= 1024
+        return f"{size:.1f} PB"
+    
+    def on_file_activated(self, side, row):
+        """Handle file/directory activation"""
+        if row.is_dir:
+            # Navigate to directory
+            if side == 'left':
+                self.left_path = row.path
+            else:
+                self.right_path = row.path
+            self.refresh_pane(side)
+        else:
+            # Open file with default application
+            self.open_file(row.path)
+    
+    def open_file(self, path):
+        """Open file with default application"""
+        try:
+            subprocess.Popen(['xdg-open', str(path)])
+        except Exception as e:
+            self.show_error(f"Error opening file: {e}")
+    
+    def on_path_changed(self, side, path_str):
+        """Handle manual path change"""
+        try:
+            path = Path(path_str).expanduser().resolve()
+            if path.is_dir():
+                if side == 'left':
+                    self.left_path = path
+                else:
+                    self.right_path = path
+                self.refresh_pane(side)
+            else:
+                self.show_error(f"Not a directory: {path}")
+        except Exception as e:
+            self.show_error(f"Invalid path: {e}")
+    
+    def get_selected_items(self, side):
+        """Get selected items from a pane"""
+        file_list = self.left_file_list if side == 'left' else self.right_file_list
+        selected = []
+        
+        for i in range(file_list.get_n_items() if hasattr(file_list, 'get_n_items') else 1000):
+            row = file_list.get_row_at_index(i)
+            if row is None:
+                break
+            if row.is_selected():
+                selected.append(row.path)
+        
+        return selected
+    
+    def on_back(self, button):
+        """Navigate back in history"""
+        if self.active_pane == 'left':
+            if self.left_history_pos > 0:
+                self.left_history_pos -= 1
+                self.left_path = self.left_history[self.left_history_pos]
+                self.refresh_pane('left')
+        else:
+            if self.right_history_pos > 0:
+                self.right_history_pos -= 1
+                self.right_path = self.right_history[self.right_history_pos]
+                self.refresh_pane('right')
+        self.update_nav_buttons()
+    
+    def on_forward(self, button):
+        """Navigate forward in history"""
+        if self.active_pane == 'left':
+            if self.left_history_pos < len(self.left_history) - 1:
+                self.left_history_pos += 1
+                self.left_path = self.left_history[self.left_history_pos]
+                self.refresh_pane('left')
+        else:
+            if self.right_history_pos < len(self.right_history) - 1:
+                self.right_history_pos += 1
+                self.right_path = self.right_history[self.right_history_pos]
+                self.refresh_pane('right')
+        self.update_nav_buttons()
+    
+    def on_up(self, button):
+        """Navigate to parent directory"""
+        path = self.left_path if self.active_pane == 'left' else self.right_path
+        if path != Path('/'):
+            if self.active_pane == 'left':
+                self.left_path = path.parent
+            else:
+                self.right_path = path.parent
+            self.refresh_pane(self.active_pane)
+    
+    def on_home(self, button):
+        """Navigate to home directory"""
+        if self.active_pane == 'left':
+            self.left_path = Path.home()
+        else:
+            self.right_path = Path.home()
+        self.refresh_pane(self.active_pane)
+    
+    def on_new_folder(self, button):
+        """Create new folder"""
+        dialog = Gtk.Dialog(title="New Folder", transient_for=self)
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Create", Gtk.ResponseType.OK)
+        
+        box = dialog.get_content_area()
+        entry = Gtk.Entry()
+        entry.set_placeholder_text("Folder name")
+        box.append(entry)
+        
+        dialog.connect('response', lambda d, r: self.on_new_folder_response(d, r, entry))
+        dialog.present()
+    
+    def on_new_folder_response(self, dialog, response, entry):
+        """Handle new folder dialog response"""
+        if response == Gtk.ResponseType.OK:
+            name = entry.get_text()
+            if name:
+                path = self.left_path if self.active_pane == 'left' else self.right_path
+                new_folder = path / name
+                try:
+                    new_folder.mkdir()
+                    self.refresh_pane(self.active_pane)
+                except Exception as e:
+                    self.show_error(f"Error creating folder: {e}")
+        dialog.close()
+    
+    def on_copy(self, button):
+        """Copy selected items"""
+        self.clipboard_items = self.get_selected_items(self.active_pane)
+        self.clipboard_operation = 'copy'
+        self.update_status(f"Copied {len(self.clipboard_items)} items")
+    
+    def on_cut(self, button):
+        """Cut selected items"""
+        self.clipboard_items = self.get_selected_items(self.active_pane)
+        self.clipboard_operation = 'cut'
+        self.update_status(f"Cut {len(self.clipboard_items)} items")
+    
+    def on_paste(self, button):
+        """Paste clipboard items"""
+        if not self.clipboard_items:
+            return
+        
+        dest_path = self.left_path if self.active_pane == 'left' else self.right_path
+        
+        for item in self.clipboard_items:
+            try:
+                dest = dest_path / item.name
+                if self.clipboard_operation == 'copy':
+                    if item.is_dir():
+                        shutil.copytree(item, dest)
+                    else:
+                        shutil.copy2(item, dest)
+                else:  # cut
+                    shutil.move(str(item), str(dest))
+            except Exception as e:
+                self.show_error(f"Error pasting {item.name}: {e}")
+        
+        if self.clipboard_operation == 'cut':
+            self.clipboard_items = []
+        
+        self.refresh_pane(self.active_pane)
+    
+    def on_delete(self, button):
+        """Delete selected items"""
+        items = self.get_selected_items(self.active_pane)
+        if not items:
+            return
+        
+        # Confirmation dialog
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            message_type=Gtk.MessageType.WARNING,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text=f"Delete {len(items)} items?"
+        )
+        dialog.connect('response', lambda d, r: self.on_delete_response(d, r, items))
+        dialog.present()
+    
+    def on_delete_response(self, dialog, response, items):
+        """Handle delete confirmation"""
+        if response == Gtk.ResponseType.YES:
+            for item in items:
+                try:
+                    if item.is_dir():
+                        shutil.rmtree(item)
+                    else:
+                        item.unlink()
+                except Exception as e:
+                    self.show_error(f"Error deleting {item.name}: {e}")
+            self.refresh_pane(self.active_pane)
+        dialog.close()
+    
+    def on_terminal(self, button):
+        """Open terminal in current directory with fallback"""
+        path = self.left_path if self.active_pane == 'left' else self.right_path
+        
+        terminals = [
+            ['kitty', '--directory', str(path)],
+            ['foot', '--working-directory', str(path)],
+            ['alacritty', '--working-directory', str(path)],
+            ['gnome-terminal', '--working-directory', str(path)],
+        ]
+        
+        for term_cmd in terminals:
+            try:
+                subprocess.Popen(term_cmd)
+                return
+            except FileNotFoundError:
+                continue
+        
+        self.show_error("No supported terminal found. Install kitty, foot, or alacritty.")
+    
+    def on_refresh(self, button):
+        """Refresh both panes"""
+        self.refresh_pane('left')
+        self.refresh_pane('right')
+    
+    def update_status(self, message=None):
+        """Update status bar"""
+        if message:
+            self.statusbar.set_text(message)
+        else:
+            path = self.left_path if self.active_pane == 'left' else self.right_path
+            try:
+                items = list(path.iterdir())
+                dirs = sum(1 for i in items if i.is_dir())
+                files = len(items) - dirs
+                self.statusbar.set_text(f"{path} • {dirs} folders, {files} files")
+            except:
+                self.statusbar.set_text(str(path))
+    
+    def show_error(self, message):
+        """Show error message"""
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.OK,
+            text=message
+        )
+        dialog.connect('response', lambda d, r: d.close())
+        dialog.present()
+
+
+class PhantomFilesApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id='com.phantom.files')
+        
+    def do_activate(self):
+        win = PhantomFiles(application=self)
+        win.present()
+
+
+def main():
+    app = PhantomFilesApp()
+    return app.run(sys.argv)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

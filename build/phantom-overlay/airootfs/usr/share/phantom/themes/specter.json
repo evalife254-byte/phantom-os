@@ -1,0 +1,17 @@
+{
+  "name": "specter",
+  "display_name": "Specter",
+  "description": "Purple and blue mystique with ethereal glow",
+  "colors": {
+    "background": "#0D0A1A",
+    "surface": "#1A1428",
+    "panel": "#251E3A",
+    "accent_primary": "#9D4EDD",
+    "accent_secondary": "#5A67D8",
+    "text_primary": "#E8E4F3",
+    "text_secondary": "#8B7FA8",
+    "warning": "#F59E0B",
+    "critical": "#EF4444",
+    "success": "#10B981"
+  }
+}

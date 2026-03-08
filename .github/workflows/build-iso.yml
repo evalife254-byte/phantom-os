@@ -1,0 +1,91 @@
+name: Build Phantom OS ISO
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      skip_upload:
+        description: 'Skip artifact upload'
+        required: false
+        default: 'false'
+
+jobs:
+  build-iso:
+    name: Build ISO
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update system and install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm archiso git base-devel
+
+      - name: Run bootstrap
+        run: ./scripts/bootstrap-phantom-v1.sh
+
+      - name: Apply overlay
+        run: ./scripts/apply-phantom-overlay.sh
+
+      - name: Validate overlay
+        run: ./scripts/validate-phantom-overlay.sh
+
+      - name: Build ISO
+        run: |
+          # Low-RAM optimizations for GitHub Actions (7GB RAM)
+          export XZ_OPT="-T2 -9 --memlimit-compress=1024MiB"
+          export ZSTD_CLEVEL=19
+          export ZSTD_NBTHREADS=2
+          export MAKEFLAGS="-j2"
+          
+          # Create swap space if needed
+          fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          
+          # Build with verbose output
+          mkarchiso -v -w ./work -o ./out ./build/archiso-profile
+          
+          # Remove swap
+          swapoff /swapfile
+          rm -f /swapfile
+
+      - name: Get ISO filename
+        id: iso
+        run: |
+          ISO_FILE=$(ls out/*.iso | head -n1)
+          echo "filename=$(basename $ISO_FILE)" >> $GITHUB_OUTPUT
+          echo "path=$ISO_FILE" >> $GITHUB_OUTPUT
+
+      - name: Generate checksums
+        run: |
+          cd out
+          sha256sum *.iso > SHA256SUMS
+          md5sum *.iso > MD5SUMS
+
+      - name: Upload ISO artifact
+        if: github.event.inputs.skip_upload != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: phantom-os-iso
+          path: |
+            out/*.iso
+            out/SHA256SUMS
+            out/MD5SUMS
+          retention-days: 30
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            out/*.iso
+            out/SHA256SUMS
+            out/MD5SUMS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

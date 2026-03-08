@@ -1,0 +1,789 @@
+#!/usr/bin/env python3
+"""
+Phantom Settings - System Settings Application for Phantom OS
+A comprehensive settings manager with Ghost Protocol theme
+"""
+
+import gi
+import os
+import sys
+import json
+import subprocess
+from pathlib import Path
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, Adw, Gio, GLib, Gdk
+
+class PhantomSettings(Adw.ApplicationWindow):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title("Phantom Settings")
+        self.set_default_size(1000, 700)
+        
+        self.settings_stack = None
+        self.setup_ui()
+        self.apply_css()
+        
+    def apply_css(self):
+        """Apply Ghost Protocol theme"""
+        css_provider = Gtk.CssProvider()
+        css = """
+        window {
+            background-color: #0A0A0F;
+            color: #E0E0E8;
+        }
+        
+        .sidebar {
+            background-color: #141420;
+            border-right: 1px solid #1A1A2E;
+        }
+        
+        .settings-category {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 4px 8px;
+            color: #E0E0E8;
+        }
+        
+        .settings-category:hover {
+            background-color: rgba(0, 240, 255, 0.1);
+        }
+        
+        .settings-category.selected {
+            background-color: rgba(0, 240, 255, 0.2);
+            border-left: 3px solid #00F0FF;
+        }
+        
+        .settings-page {
+            background-color: #0A0A0F;
+            padding: 20px;
+        }
+        
+        .settings-group {
+            background-color: #141420;
+            border-radius: 12px;
+            border: 1px solid #1A1A2E;
+            margin: 12px 0;
+        }
+        
+        .settings-row {
+            padding: 16px;
+            border-bottom: 1px solid #1A1A2E;
+        }
+        
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+        
+        .settings-title {
+            color: #00F0FF;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .settings-description {
+            color: #6B6B80;
+            font-size: 12px;
+        }
+        
+        button {
+            background-color: #1A1A2E;
+            color: #E0E0E8;
+            border: 1px solid #00F0FF;
+            border-radius: 6px;
+            padding: 8px 16px;
+        }
+        
+        button:hover {
+            background-color: rgba(0, 240, 255, 0.15);
+        }
+        
+        switch {
+            background-color: #1A1A2E;
+        }
+        
+        switch:checked {
+            background-color: #00F0FF;
+        }
+        
+        scale trough {
+            background-color: #1A1A2E;
+            border-radius: 4px;
+        }
+        
+        scale highlight {
+            background-color: #00F0FF;
+            border-radius: 4px;
+        }
+        
+        entry {
+            background-color: #1A1A2E;
+            color: #E0E0E8;
+            border: 1px solid #00F0FF;
+            border-radius: 6px;
+            padding: 8px;
+        }
+        
+        dropdown {
+            background-color: #1A1A2E;
+            color: #E0E0E8;
+            border: 1px solid #00F0FF;
+            border-radius: 6px;
+        }
+        """
+        css_provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+    
+    def setup_ui(self):
+        """Setup the main UI with sidebar and content area"""
+        # Main horizontal box
+        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.set_content(main_box)
+        
+        # Sidebar with categories
+        sidebar = self.create_sidebar()
+        sidebar.set_size_request(250, -1)
+        sidebar.add_css_class('sidebar')
+        main_box.append(sidebar)
+        
+        # Content area with stack
+        self.settings_stack = Gtk.Stack()
+        self.settings_stack.add_css_class('settings-page')
+        self.settings_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        main_box.append(self.settings_stack)
+        
+        # Add settings pages
+        self.settings_stack.add_child(self.create_appearance_page(), "appearance", "Appearance")
+        self.settings_stack.add_child(self.create_display_page(), "display", "Display")
+        self.settings_stack.add_child(self.create_network_page(), "network", "Network")
+        self.settings_stack.add_child(self.create_power_page(), "power", "Power")
+        self.settings_stack.add_child(self.create_sound_page(), "sound", "Sound")
+        self.settings_stack.add_child(self.create_users_page(), "users", "Users")
+        self.settings_stack.add_child(self.create_system_page(), "system", "System")
+        
+        # Show appearance page by default
+        self.settings_stack.set_visible_child_name("appearance")
+    
+    def create_sidebar(self):
+        """Create sidebar with settings categories"""
+        sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        
+        # Title
+        title = Gtk.Label(label="⚙️ Settings")
+        title.set_margin_top(20)
+        title.set_margin_bottom(20)
+        title.set_markup("<big><b>⚙️ Phantom Settings</b></big>")
+        sidebar_box.append(title)
+        
+        # Categories list
+        categories = [
+            ("appearance", "🎨", "Appearance"),
+            ("display", "🖥️", "Display"),
+            ("network", "🌐", "Network"),
+            ("power", "🔋", "Power"),
+            ("sound", "🔊", "Sound"),
+            ("users", "👤", "Users"),
+            ("system", "⚡", "System"),
+        ]
+        
+        for page_id, icon, label in categories:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            row.add_css_class('settings-category')
+            row.page_id = page_id
+            
+            icon_label = Gtk.Label(label=icon)
+            row.append(icon_label)
+            
+            text_label = Gtk.Label(label=label)
+            text_label.set_xalign(0)
+            text_label.set_hexpand(True)
+            row.append(text_label)
+            
+            # Click handler
+            click = Gtk.GestureClick()
+            click.connect('pressed', lambda g, n, x, y, pid=page_id: self.on_category_clicked(pid))
+            row.add_controller(click)
+            
+            sidebar_box.append(row)
+            
+            # Track first category as default selected
+            if page_id == "appearance":
+                row.add_css_class('selected')
+                self.selected_category = row
+        
+        return sidebar_box
+    
+    def on_category_clicked(self, page_id):
+        """Handle category selection"""
+        # Update visual selection
+        if hasattr(self, 'selected_category'):
+            self.selected_category.remove_css_class('selected')
+        
+        # Find and highlight new selection
+        sidebar = self.get_content().get_first_child()
+        row = sidebar.get_first_child()
+        while row:
+            if isinstance(row, Gtk.Box) and hasattr(row, 'page_id'):
+                if row.page_id == page_id:
+                    row.add_css_class('selected')
+                    self.selected_category = row
+                    break
+            row = row.get_next_sibling()
+        
+        # Switch page
+        self.settings_stack.set_visible_child_name(page_id)
+    
+    def create_settings_group(self, title):
+        """Create a settings group container"""
+        group_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        group_box.add_css_class('settings-group')
+        
+        # Group title
+        title_label = Gtk.Label(label=title)
+        title_label.set_margin_top(12)
+        title_label.set_margin_bottom(8)
+        title_label.set_margin_start(16)
+        title_label.set_markup(f"<b>{title}</b>")
+        group_box.append(title_label)
+        
+        return group_box
+    
+    def create_setting_row(self, title, description, widget):
+        """Create a settings row with title, description, and control"""
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        row.add_css_class('settings-row')
+        
+        # Text content
+        text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        text_box.set_hexpand(True)
+        row.append(text_box)
+        
+        title_label = Gtk.Label(label=title)
+        title_label.add_css_class('settings-title')
+        title_label.set_xalign(0)
+        text_box.append(title_label)
+        
+        if description:
+            desc_label = Gtk.Label(label=description)
+            desc_label.add_css_class('settings-description')
+            desc_label.set_xalign(0)
+            text_box.append(desc_label)
+        
+        # Control widget
+        row.append(widget)
+        
+        return row
+    
+    def create_appearance_page(self):
+        """Create appearance settings page"""
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page.set_margin_start(20)
+        page.set_margin_end(20)
+        
+        # Header
+        header = Gtk.Label(label="Appearance")
+        header.set_markup("<big><b>🎨 Appearance</b></big>")
+        header.set_margin_bottom(20)
+        page.append(header)
+        
+        # Theme group
+        theme_group = self.create_settings_group("Theme")
+        page.append(theme_group)
+        
+        # Theme selector
+        theme_dropdown = Gtk.DropDown()
+        theme_model = Gtk.StringList.new([
+            "Ghost Protocol (Default)",
+            "Specter", 
+            "Wraith",
+            "Eclipse",
+            "Daylight"
+        ])
+        theme_dropdown.set_model(theme_model)
+        theme_dropdown.set_selected(0)
+        theme_row = self.create_setting_row(
+            "Color Theme",
+            "Choose your preferred color scheme",
+            theme_dropdown
+        )
+        theme_group.append(theme_row)
+        
+        # Dark mode toggle
+        dark_switch = Gtk.Switch()
+        dark_switch.set_active(True)
+        dark_switch.set_valign(Gtk.Align.CENTER)
+        dark_row = self.create_setting_row(
+            "Dark Mode",
+            "Use dark colors for the system interface",
+            dark_switch
+        )
+        theme_group.append(dark_row)
+        
+        # Accent color selector
+        accent_dropdown = Gtk.DropDown()
+        accent_model = Gtk.StringList.new([
+            "Cyan (Default)",
+            "Purple",
+            "Yellow",
+            "Green",
+            "Red"
+        ])
+        accent_dropdown.set_model(accent_model)
+        accent_dropdown.set_selected(0)
+        accent_row = self.create_setting_row(
+            "Accent Color",
+            "Primary accent color for highlights",
+            accent_dropdown
+        )
+        theme_group.append(accent_row)
+        
+        # Wallpaper group
+        wallpaper_group = self.create_settings_group("Wallpaper")
+        page.append(wallpaper_group)
+        
+        # Current wallpaper preview
+        wallpaper_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        wallpaper_box.set_margin_start(16)
+        wallpaper_box.set_margin_end(16)
+        wallpaper_box.set_margin_bottom(12)
+        
+        preview = Gtk.DrawingArea()
+        preview.set_size_request(200, 120)
+        preview.set_draw_func(self.draw_wallpaper_preview)
+        wallpaper_box.append(preview)
+        
+        # Wallpaper buttons
+        button_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        button_box.set_margin_start(16)
+        button_box.set_valign(Gtk.Align.CENTER)
+        wallpaper_box.append(button_box)
+        
+        change_btn = Gtk.Button(label="🖼️ Change Wallpaper")
+        change_btn.connect('clicked', self.on_change_wallpaper)
+        button_box.append(change_btn)
+        
+        random_btn = Gtk.Button(label="🎲 Random Wallpaper")
+        random_btn.connect('clicked', self.on_random_wallpaper)
+        button_box.append(random_btn)
+        
+        wallpaper_group.append(wallpaper_box)
+        
+        return page
+    
+    def create_display_page(self):
+        """Create display settings page"""
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page.set_margin_start(20)
+        page.set_margin_end(20)
+        
+        # Header
+        header = Gtk.Label(label="Display")
+        header.set_markup("<big><b>🖥️ Display</b></big>")
+        header.set_margin_bottom(20)
+        page.append(header)
+        
+        # Resolution group
+        res_group = self.create_settings_group("Resolution & Refresh")
+        page.append(res_group)
+        
+        # Resolution dropdown
+        res_dropdown = Gtk.DropDown()
+        res_model = Gtk.StringList.new([
+            "1920x1080 (Recommended)",
+            "2560x1440",
+            "3840x2160",
+            "1280x720",
+            "Auto Detect"
+        ])
+        res_dropdown.set_model(res_model)
+        res_dropdown.set_selected(0)
+        res_row = self.create_setting_row(
+            "Screen Resolution",
+            "Display resolution",
+            res_dropdown
+        )
+        res_group.append(res_row)
+        
+        # Refresh rate
+        refresh_dropdown = Gtk.DropDown()
+        refresh_model = Gtk.StringList.new([
+            "60 Hz",
+            "120 Hz",
+            "144 Hz",
+            "240 Hz"
+        ])
+        refresh_dropdown.set_model(refresh_model)
+        refresh_dropdown.set_selected(0)
+        refresh_row = self.create_setting_row(
+            "Refresh Rate",
+            "Screen refresh rate",
+            refresh_dropdown
+        )
+        res_group.append(refresh_row)
+        
+        # Scale group
+        scale_group = self.create_settings_group("Scaling")
+        page.append(scale_group)
+        
+        # Scale selector
+        scale_dropdown = Gtk.DropDown()
+        scale_model = Gtk.StringList.new([
+            "100% (Default)",
+            "125%",
+            "150%",
+            "200%"
+        ])
+        scale_dropdown.set_model(scale_model)
+        scale_dropdown.set_selected(0)
+        scale_row = self.create_setting_row(
+            "UI Scale",
+            "Scale the user interface",
+            scale_dropdown
+        )
+        scale_group.append(scale_row)
+        
+        # Night light group
+        nightlight_group = self.create_settings_group("Night Light")
+        page.append(nightlight_group)
+        
+        # Night light toggle
+        night_switch = Gtk.Switch()
+        night_switch.set_active(False)
+        night_switch.set_valign(Gtk.Align.CENTER)
+        night_row = self.create_setting_row(
+            "Night Light",
+            "Warm colors for better sleep",
+            night_switch
+        )
+        nightlight_group.append(night_row)
+        
+        return page
+    
+    def create_network_page(self):
+        """Create network settings page"""
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page.set_margin_start(20)
+        page.set_margin_end(20)
+        
+        # Header
+        header = Gtk.Label(label="Network")
+        header.set_markup("<big><b>🌐 Network</b></big>")
+        header.set_margin_bottom(20)
+        page.append(header)
+        
+        # Wi-Fi group
+        wifi_group = self.create_settings_group("Wi-Fi")
+        page.append(wifi_group)
+        
+        # Wi-Fi toggle
+        wifi_switch = Gtk.Switch()
+        wifi_switch.set_active(True)
+        wifi_switch.set_valign(Gtk.Align.CENTER)
+        wifi_row = self.create_setting_row(
+            "Wi-Fi",
+            "Wireless networking",
+            wifi_switch
+        )
+        wifi_group.append(wifi_row)
+        
+        # Available networks button
+        networks_btn = Gtk.Button(label="📶 View Available Networks")
+        networks_btn.connect('clicked', self.on_view_networks)
+        networks_btn.set_margin_start(16)
+        networks_btn.set_margin_end(16)
+        networks_btn.set_margin_bottom(12)
+        wifi_group.append(networks_btn)
+        
+        # VPN group
+        vpn_group = self.create_settings_group("VPN")
+        page.append(vpn_group)
+        
+        # VPN toggle
+        vpn_switch = Gtk.Switch()
+        vpn_switch.set_active(False)
+        vpn_switch.set_valign(Gtk.Align.CENTER)
+        vpn_row = self.create_setting_row(
+            "VPN",
+            "Virtual Private Network",
+            vpn_switch
+        )
+        vpn_group.append(vpn_row)
+        
+        return page
+    
+    def create_power_page(self):
+        """Create power settings page"""
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page.set_margin_start(20)
+        page.set_margin_end(20)
+        
+        # Header
+        header = Gtk.Label(label="Power")
+        header.set_markup("<big><b>🔋 Power</b></big>")
+        header.set_margin_bottom(20)
+        page.append(header)
+        
+        # Power profile group
+        profile_group = self.create_settings_group("Power Profile")
+        page.append(profile_group)
+        
+        # Profile selector
+        profile_dropdown = Gtk.DropDown()
+        profile_model = Gtk.StringList.new([
+            "Balanced (Recommended)",
+            "Performance",
+            "Power Saver"
+        ])
+        profile_dropdown.set_model(profile_model)
+        profile_dropdown.set_selected(0)
+        profile_dropdown.connect('notify::selected', self.on_power_profile_changed)
+        profile_row = self.create_setting_row(
+            "Power Profile",
+            "Optimize for performance or battery life",
+            profile_dropdown
+        )
+        profile_group.append(profile_row)
+        
+        # Screen group
+        screen_group = self.create_settings_group("Screen")
+        page.append(screen_group)
+        
+        # Screen timeout
+        timeout_dropdown = Gtk.DropDown()
+        timeout_model = Gtk.StringList.new([
+            "5 minutes",
+            "10 minutes",
+            "15 minutes",
+            "30 minutes",
+            "Never"
+        ])
+        timeout_dropdown.set_model(timeout_model)
+        timeout_dropdown.set_selected(1)
+        timeout_row = self.create_setting_row(
+            "Screen Blank",
+            "Turn off screen after inactivity",
+            timeout_dropdown
+        )
+        screen_group.append(timeout_row)
+        
+        # Battery group
+        battery_group = self.create_settings_group("Battery")
+        page.append(battery_group)
+        
+        # Show battery percentage
+        battery_switch = Gtk.Switch()
+        battery_switch.set_active(True)
+        battery_switch.set_valign(Gtk.Align.CENTER)
+        battery_row = self.create_setting_row(
+            "Show Battery Percentage",
+            "Display battery level in top panel",
+            battery_switch
+        )
+        battery_group.append(battery_row)
+        
+        return page
+    
+    def create_sound_page(self):
+        """Create sound settings page"""
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page.set_margin_start(20)
+        page.set_margin_end(20)
+        
+        # Header
+        header = Gtk.Label(label="Sound")
+        header.set_markup("<big><b>🔊 Sound</b></big>")
+        header.set_margin_bottom(20)
+        page.append(header)
+        
+        # Output group
+        output_group = self.create_settings_group("Output")
+        page.append(output_group)
+        
+        # Volume slider
+        volume_scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL)
+        volume_scale.set_range(0, 100)
+        volume_scale.set_value(70)
+        volume_scale.set_hexpand(True)
+        volume_row = self.create_setting_row(
+            "Output Volume",
+            "Speaker volume",
+            volume_scale
+        )
+        output_group.append(volume_row)
+        
+        # Output device
+        output_dropdown = Gtk.DropDown()
+        output_model = Gtk.StringList.new([
+            "Built-in Speakers",
+            "HDMI Output",
+            "USB Audio"
+        ])
+        output_dropdown.set_model(output_model)
+        output_dropdown.set_selected(0)
+        output_row = self.create_setting_row(
+            "Output Device",
+            "Select audio output",
+            output_dropdown
+        )
+        output_group.append(output_row)
+        
+        # Input group
+        input_group = self.create_settings_group("Input")
+        page.append(input_group)
+        
+        # Input volume
+        input_scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL)
+        input_scale.set_range(0, 100)
+        input_scale.set_value(50)
+        input_scale.set_hexpand(True)
+        input_row = self.create_setting_row(
+            "Input Volume",
+            "Microphone level",
+            input_scale
+        )
+        input_group.append(input_row)
+        
+        return page
+    
+    def create_users_page(self):
+        """Create users settings page"""
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page.set_margin_start(20)
+        page.set_margin_end(20)
+        
+        # Header
+        header = Gtk.Label(label="Users")
+        header.set_markup("<big><b>👤 Users</b></big>")
+        header.set_margin_bottom(20)
+        page.append(header)
+        
+        # Current user group
+        user_group = self.create_settings_group("Current User")
+        page.append(user_group)
+        
+        # User info (placeholder)
+        username_label = Gtk.Label(label="Username: phantom-user")
+        username_label.set_margin_start(16)
+        username_label.set_margin_bottom(8)
+        user_group.append(username_label)
+        
+        # Change password button
+        passwd_btn = Gtk.Button(label="🔑 Change Password")
+        passwd_btn.set_margin_start(16)
+        passwd_btn.set_margin_end(16)
+        passwd_btn.set_margin_bottom(12)
+        user_group.append(passwd_btn)
+        
+        return page
+    
+    def create_system_page(self):
+        """Create system settings page"""
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page.set_margin_start(20)
+        page.set_margin_end(20)
+        
+        # Header
+        header = Gtk.Label(label="System")
+        header.set_markup("<big><b>⚡ System</b></big>")
+        header.set_margin_bottom(20)
+        page.append(header)
+        
+        # About group
+        about_group = self.create_settings_group("About")
+        page.append(about_group)
+        
+        # OS info
+        os_info = Gtk.Label(label="Phantom OS v0.1.0 (Ghost Protocol)")
+        os_info.set_margin_start(16)
+        os_info.set_margin_top(8)
+        about_group.append(os_info)
+        
+        kernel_info = Gtk.Label(label="Kernel: Linux (rolling)")
+        kernel_info.set_margin_start(16)
+        kernel_info.set_margin_bottom(12)
+        about_group.append(kernel_info)
+        
+        # Updates group
+        updates_group = self.create_settings_group("Updates")
+        page.append(updates_group)
+        
+        # Auto updates toggle
+        updates_switch = Gtk.Switch()
+        updates_switch.set_active(True)
+        updates_switch.set_valign(Gtk.Align.CENTER)
+        updates_row = self.create_setting_row(
+            "Automatic Updates",
+            "Keep system up to date automatically",
+            updates_switch
+        )
+        updates_group.append(updates_row)
+        
+        # Check updates button
+        check_btn = Gtk.Button(label="🔄 Check for Updates")
+        check_btn.set_margin_start(16)
+        check_btn.set_margin_end(16)
+        check_btn.set_margin_bottom(12)
+        updates_group.append(check_btn)
+        
+        return page
+    
+    # Event handlers
+    def draw_wallpaper_preview(self, area, ctx, width, height):
+        """Draw wallpaper preview"""
+        ctx.set_source_rgb(0.04, 0.04, 0.06)
+        ctx.rectangle(0, 0, width, height)
+        ctx.fill()
+        
+        ctx.set_source_rgb(0, 0.94, 1)
+        ctx.set_line_width(2)
+        ctx.rectangle(1, 1, width-2, height-2)
+        ctx.stroke()
+        
+        ctx.set_source_rgb(0, 0.94, 1)
+        ctx.select_font_face("Sans", 0, 400)
+        ctx.set_font_size(16)
+        ctx.move_to(width/2 - 40, height/2)
+        ctx.show_text("🖼️ Wallpaper")
+    
+    def on_change_wallpaper(self, button):
+        """Open wallpaper changer"""
+        subprocess.Popen(['phantom-wallpaper', 'random'])
+    
+    def on_random_wallpaper(self, button):
+        """Set random wallpaper"""
+        subprocess.Popen(['phantom-wallpaper', 'random'])
+    
+    def on_view_networks(self, button):
+        """View available networks"""
+        subprocess.Popen(['nmcli', 'device', 'wifi', 'list'])
+    
+    def on_power_profile_changed(self, dropdown, pspec):
+        """Handle power profile change"""
+        profiles = ['balanced', 'performance', 'powersave']
+        selected = dropdown.get_selected()
+        if 0 <= selected < len(profiles):
+            subprocess.Popen(['phantom-power', profiles[selected]])
+
+
+class PhantomSettingsApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id='com.phantom.settings')
+        
+    def do_activate(self):
+        win = PhantomSettings(application=self)
+        win.present()
+
+
+def main():
+    app = PhantomSettingsApp()
+    return app.run(sys.argv)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

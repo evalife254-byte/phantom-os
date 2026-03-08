@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# Phantom Browser v2 - Enhanced Firefox wrapper for Phantom OS
+# Features: profile management, theme integration, privacy defaults, quick actions
+
+set -euo pipefail
+
+PHANTOM_PROFILE_DIR="${HOME}/.mozilla/firefox/phantom"
+PHANTOM_PROFILE_NAME="Phantom"
+
+# Function to create embedded profile setup
+setup_embedded_profile() {
+    mkdir -p "$PHANTOM_PROFILE_DIR/chrome"
+    
+    # Create user.js with Phantom preferences inline
+    cat > "$PHANTOM_PROFILE_DIR/user.js" <<'INNEREOF'
+// Phantom Browser Preferences
+user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
+user_pref("browser.uidensity", 1);
+user_pref("privacy.trackingprotection.enabled", true);
+user_pref("privacy.donottrackheader.enabled", true);
+user_pref("dom.security.https_only_mode", true);
+user_pref("datareporting.healthreport.uploadEnabled", false);
+user_pref("toolkit.telemetry.enabled", false);
+user_pref("browser.newtabpage.activity-stream.showSponsored", false);
+INNEREOF
+
+    # Create userChrome.css inline
+    cat > "$PHANTOM_PROFILE_DIR/chrome/userChrome.css" <<'INNEREOF'
+:root { --phantom-bg: #0A0A0F; --phantom-panel: #1A1A2E; --phantom-accent: #00F0FF; }
+#navigator-toolbox { background: var(--phantom-panel) !important; border-bottom: 1px solid var(--phantom-accent) !important; }
+.tabbrowser-tab[selected="true"] { border-top: 2px solid var(--phantom-accent) !important; }
+#urlbar { border: 1px solid var(--phantom-accent) !important; }
+INNEREOF
+
+    # Create userContent.css inline  
+    cat > "$PHANTOM_PROFILE_DIR/chrome/userContent.css" <<'INNEREOF'
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #141420; }
+::-webkit-scrollbar-thumb { background: #1A1A2E; border: 1px solid #00F0FF; border-radius: 5px; }
+INNEREOF
+
+    # Create profiles.ini
+    mkdir -p "${HOME}/.mozilla/firefox"
+    cat > "${HOME}/.mozilla/firefox/profiles.ini" <<INNEREOF
+[General]
+StartWithLastProfile=1
+Version=2
+
+[Profile0]
+Name=Phantom
+IsRelative=1
+Path=phantom
+Default=1
+INNEREOF
+}
+
+# Show usage
+usage() {
+    cat <<'EOF'
+Phantom Browser v2 - Enhanced Firefox for Phantom OS
+Usage: phantom-browser [options] [URL]
+  --setup       Initialize Phantom profile
+  --private     Open private window
+  --help        Show help
+EOF
+}
+
+# Parse arguments
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --setup) setup_embedded_profile; echo "Profile setup complete"; exit 0 ;;
+        --help) usage; exit 0 ;;
+        *) ARGS+=("$1") ;;
+    esac
+    shift
+done
+
+# Setup profile if needed
+if [[ ! -d "$PHANTOM_PROFILE_DIR" ]] || [[ ! -f "$PHANTOM_PROFILE_DIR/user.js" ]]; then
+    setup_embedded_profile
+fi
+
+# Launch
+exec firefox -P "$PHANTOM_PROFILE_NAME" "${ARGS[@]}"

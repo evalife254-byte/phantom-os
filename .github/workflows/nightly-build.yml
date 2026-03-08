@@ -1,0 +1,125 @@
+name: Nightly ISO Build
+
+on:
+  schedule:
+    # Run at 3 AM UTC every day (after validation at 2 AM)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      upload_artifact:
+        description: 'Upload ISO as artifact'
+        required: false
+        default: 'true'
+
+jobs:
+  build-nightly-iso:
+    name: Build Nightly ISO
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update system and install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm archiso git base-devel
+
+      - name: Run bootstrap
+        run: ./scripts/bootstrap-phantom-v1.sh
+
+      - name: Apply overlay
+        run: ./scripts/apply-phantom-overlay.sh
+
+      - name: Validate overlay
+        run: ./scripts/validate-phantom-overlay.sh
+
+      - name: Build ISO with low-RAM optimizations
+        run: |
+          # Low-RAM optimizations for GitHub Actions (7GB RAM)
+          export XZ_OPT="-T2 -9 --memlimit-compress=1024MiB"
+          export ZSTD_CLEVEL=19
+          export ZSTD_NBTHREADS=2
+          export MAKEFLAGS="-j2"
+          
+          # Create swap space
+          fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          
+          # Build ISO
+          mkarchiso -v -w ./work -o ./out ./build/archiso-profile
+          
+          # Cleanup swap
+          swapoff /swapfile
+          rm -f /swapfile
+
+      - name: Generate checksums
+        run: |
+          cd out
+          sha256sum *.iso > SHA256SUMS
+          md5sum *.iso > MD5SUMS
+
+      - name: Rename with nightly tag
+        run: |
+          cd out
+          DATE=$(date +%Y%m%d)
+          for iso in *.iso; do
+            mv "$iso" "${iso%.iso}-nightly-${DATE}.iso"
+          done
+
+      - name: Upload nightly ISO artifact
+        if: github.event.inputs.upload_artifact != 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: phantom-os-nightly-$(date +%Y%m%d)
+          path: |
+            out/*.iso
+            out/SHA256SUMS
+            out/MD5SUMS
+          retention-days: 7
+
+      - name: Update nightly release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: nightly
+          name: Nightly Build $(date +%Y-%m-%d)
+          body: |
+            ## Phantom OS Nightly Build
+            
+            **Date:** $(date +%Y-%m-%d %H:%M UTC)
+            **Commit:** ${{ github.sha }}
+            
+            This is an automated nightly build. It may contain unstable features.
+            
+            ### Downloads
+            - ISO file with checksums below
+            - Default password: `phantom`
+            
+            ### Build Info
+            - Built on: GitHub Actions (Arch Linux container)
+            - RAM: 7GB + 4GB swap
+            - Build time: ~20-30 minutes
+          files: |
+            out/*.iso
+            out/SHA256SUMS
+            out/MD5SUMS
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Nightly ISO build failed - ' + new Date().toISOString().split('T')[0],
+              body: 'The nightly ISO build has failed. Please check the Actions logs.',
+              labels: ['bug', 'ci', 'nightly']
+            })

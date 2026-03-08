@@ -1,0 +1,69 @@
+#!/bin/bash
+# Calamares welcome script for Phantom OS
+# Presents Install/Try options to the user
+
+set -e
+
+# Check if running in live environment
+if [[ ! -d /run/archiso ]]; then
+    echo "Error: Not running in live environment"
+    exit 1
+fi
+
+# Show welcome dialog
+show_welcome() {
+    yad --center \
+        --title="Welcome to Phantom OS" \
+        --window-icon=/usr/share/icons/phantom-folder.svg \
+        --width=600 \
+        --height=400 \
+        --borders=20 \
+        --fixed \
+        --image=/usr/share/phantom/wallpapers/default.jpg \
+        --image-on-top \
+        --text="<big><b>Welcome to Phantom OS</b></big>\n\nGhost Protocol Edition v0.1.0\n\nChoose how you'd like to proceed:" \
+        --button="Try Phantom OS (Live):1" \
+        --button="Install Phantom OS:0" \
+        --buttons-layout=center \
+        --center
+}
+
+# Launch installer
+launch_installer() {
+    # Check if Calamares is installed
+    if command -v calamares &>/dev/null; then
+        # Launch Calamares with sudo
+        pkexec calamares --style breeze
+    else
+        yad --error \
+            --title="Error" \
+            --text="Installer not found. Please install calamares package."
+    fi
+}
+
+# Main
+main() {
+    # Set Ghost Protocol theme for GTK
+    export GTK_THEME=Phantom
+    
+    # Show welcome dialog
+    show_welcome
+    
+    # Check user choice
+    case $? in
+        0)
+            # Install selected
+            launch_installer
+            ;;
+        1)
+            # Try selected - just close and let user explore
+            exit 0
+            ;;
+        *)
+            # Cancel or close
+            exit 0
+            ;;
+    esac
+}
+
+main "$@"

@@ -1,0 +1,32 @@
+# Phantom OS Calamares Branding
+
+---
+componentName: phantom
+
+strings:
+    productName:         "Phantom OS"
+    shortProductName:    "Phantom"
+    version:             "0.1.0"
+    shortVersion:        "0.1"
+    versionedName:       "Phantom OS 0.1.0"
+    shortVersionedName:  "Phantom 0.1"
+    bootloaderEntryName: "Phantom OS"
+    productUrl:          "https://github.com/YOUR_USERNAME/phantom-os"
+    supportUrl:          "https://github.com/YOUR_USERNAME/phantom-os/issues"
+    knownIssuesUrl:      "https://github.com/YOUR_USERNAME/phantom-os/issues"
+    releaseNotesUrl:     "https://github.com/YOUR_USERNAME/phantom-os/releases"
+
+images:
+    productLogo:         "phantom-logo.png"
+    productIcon:         "phantom-icon.png"
+    productWelcome:      "phantom-welcome.png"
+
+style:
+   sidebarBackground:    "#0A0A0F"
+   sidebarText:          "#E0E0E8"
+   sidebarTextSelect:    "#00F0FF"
+   sidebarTextHighlight: "#00F0FF"
+
+slideshow:               "show.qml"
+
+slideshowAPI: 2

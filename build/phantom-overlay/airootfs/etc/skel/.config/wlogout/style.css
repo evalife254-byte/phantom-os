@@ -1,0 +1,49 @@
+/* Phantom OS — wlogout power menu
+ * Theme: Ghost Protocol
+ */
+
+* {
+  background-image: none;
+  box-shadow: none;
+}
+
+window {
+  background-color: rgba(10, 10, 15, 0.95);
+}
+
+button {
+  color: #E0E0E8;
+  background-color: rgba(26, 26, 46, 0.8);
+  border: 2px solid rgba(0, 240, 255, 0.3);
+  border-radius: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 25%;
+  margin: 20px;
+  transition: all 200ms ease;
+}
+
+button:focus,
+button:active,
+button:hover {
+  background-color: rgba(0, 240, 255, 0.15);
+  border: 2px solid #00F0FF;
+  color: #00F0FF;
+  outline-style: none;
+}
+
+#lock {
+  background-image: image(url("/usr/share/wlogout/icons/lock.png"));
+}
+
+#logout {
+  background-image: image(url("/usr/share/wlogout/icons/logout.png"));
+}
+
+#shutdown {
+  background-image: image(url("/usr/share/wlogout/icons/shutdown.png"));
+}
+
+#reboot {
+  background-image: image(url("/usr/share/wlogout/icons/reboot.png"));
+}

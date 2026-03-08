@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+# Phantom Video - Video Player for Phantom OS
+# MPV wrapper with Ghost Protocol theme and custom controls
+
+set -euo pipefail
+
+VIDEO_CONFIG_DIR="${HOME}/.config/phantom-video"
+MPV_CONFIG_DIR="${HOME}/.config/mpv"
+
+# Setup Phantom Video configuration
+setup_config() {
+    echo "Setting up Phantom Video configuration..."
+    
+    mkdir -p "$MPV_CONFIG_DIR"
+    
+    # Create MPV config with Ghost Protocol theme
+    cat > "$MPV_CONFIG_DIR/mpv.conf" <<'EOF'
+# Phantom Video - MPV Configuration
+# Ghost Protocol Theme
+
+# UI
+osc=no
+border=no
+keep-open=yes
+force-window=immediate
+
+# Video
+profile=gpu-hq
+scale=ewa_lanczossharp
+
+# Audio
+volume=100
+volume-max=150
+
+# Subtitles
+sub-font-size=40
+sub-color="#00F0FF"
+sub-border-color="#0A0A0F"
+sub-border-size=2
+sub-shadow-offset=1
+sub-shadow-color="#000000"
+
+# OSD
+osd-font-size=30
+osd-color="#00F0FF"
+osd-border-color="#0A0A0F"
+osd-border-size=2
+
+# Cache
+cache=yes
+cache-secs=60
+demuxer-max-bytes=50M
+
+# Screenshots
+screenshot-format=png
+screenshot-template="~/Pictures/phantom-video/%F_%n"
+screenshot-directory="~/Pictures/phantom-video"
+EOF
+    
+    # Create input config for keybindings
+    cat > "$MPV_CONFIG_DIR/input.conf" <<'EOF'
+# Phantom Video Keybindings
+
+# Basic controls
+SPACE cycle pause
+p cycle pause
+f cycle fullscreen
+m cycle mute
+
+# Navigation
+RIGHT seek 5
+LEFT seek -5
+UP seek 60
+DOWN seek -60
+PGUP seek 600
+PGDWN seek -600
+
+# Volume
+0 set volume 0
+1 add volume -10
+2 add volume -5
+3 add volume -2
+4 add volume -1
+5 set volume 100
+6 add volume 1
+7 add volume 2
+8 add volume 5
+9 add volume 10
+
+# Playlist
+ENTER playlist-next
+> playlist-next
+< playlist-prev
+
+# Speed
+[ multiply speed 0.9091
+] multiply speed 1.1
+{ multiply speed 0.5
+} multiply speed 2.0
+BS set speed 1.0
+
+# Subtitles
+s cycle sub
+S cycle sub down
+v cycle audio
+V cycle audio down
+
+# Screenshots
+F5 screenshot
+
+# Quit
+q quit
+Q quit-watch-later
+ESC set fullscreen no
+EOF
+    
+    # Create custom OSC (On-Screen Controller) Lua script
+    mkdir -p "$MPV_CONFIG_DIR/scripts"
+    cat > "$MPV_CONFIG_DIR/scripts/phantom-osc.lua" <<'EOF'
+-- Phantom Video OSC - Ghost Protocol Theme
+local mp = require 'mp'
+local assdraw = require 'mp.assdraw'
+
+-- Colors (Ghost Protocol)
+local colors = {
+    bg = "0A0A0F",
+    surface = "141420",
+    panel = "1A1A2E",
+    accent = "00F0FF",
+    accent2 = "7B68EE",
+    text = "E0E0E8"
+}
+
+-- OSC visibility
+local osc_visible = false
+local osc_timeout = nil
+
+function show_osc()
+    osc_visible = true
+    mp.commandv("script-message", "osc-visibility", "always")
+    
+    if osc_timeout then
+        mp.cancel_timer(osc_timeout)
+    end
+    
+    osc_timeout = mp.add_timeout(3, hide_osc)
+end
+
+function hide_osc()
+    osc_visible = false
+    mp.commandv("script-message", "osc-visibility", "auto")
+end
+
+-- Mouse movement handler
+mp.register_event("mouse-move", show_osc)
+
+-- Keybinding to toggle OSC
+mp.add_key_binding(nil, "toggle-osc", function()
+    if osc_visible then
+        hide_osc()
+    else
+        show_osc()
+    end
+end)
+
+mp.msg.info("Phantom Video OSC loaded - Ghost Protocol theme active")
+EOF
+    
+    mkdir -p "~/Pictures/phantom-video"
+    echo "Phantom Video configuration complete"
+}
+
+# Show usage
+usage() {
+    cat <<'EOF'
+Phantom Video - Video Player for Phantom OS
+Usage: phantom-video [options] [files...]
+
+Options:
+    --setup         Initialize Phantom Video configuration
+    --fullscreen    Start in fullscreen mode
+    --loop          Loop playlist
+    --help          Show this help
+
+Keyboard Shortcuts (during playback):
+    Space       Pause/Play
+    F           Toggle fullscreen
+    M           Toggle mute
+    ←/→         Seek ±5 seconds
+    ↑/↓         Seek ±1 minute
+    0-9         Volume control (0=mute, 5=100%)
+    S           Cycle subtitles
+    V           Cycle audio tracks
+    F5          Take screenshot
+    Q           Quit
+    ESC         Exit fullscreen
+
+Examples:
+    phantom-video movie.mkv
+    phantom-video --fullscreen playlist.m3u
+    phantom-video *.mp4
+EOF
+}
+
+# Parse arguments
+MPV_ARGS=()
+FULLSCREEN=false
+LOOP=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --setup)
+            setup_config
+            exit 0
+            ;;
+        --fullscreen)
+            FULLSCREEN=true
+            shift
+            ;;
+        --loop)
+            LOOP=true
+            shift
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        *)
+            MPV_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Setup config if needed
+if [[ ! -f "$MPV_CONFIG_DIR/mpv.conf" ]]; then
+    setup_config
+fi
+
+# Build mpv command
+if $FULLSCREEN; then
+    MPV_ARGS+=("--fullscreen")
+fi
+
+if $LOOP; then
+    MPV_ARGS+=("--loop-file=inf")
+fi
+
+# Check if mpv is installed
+if ! command -v mpv &>/dev/null; then
+    echo "Error: mpv is not installed"
+    echo "Install it with: sudo pacman -S mpv"
+    exit 1
+fi
+
+# Launch mpv with Phantom configuration
+exec mpv "${MPV_ARGS[@]}"

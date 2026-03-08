@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Phantom Settings
+Comment=System settings for Phantom OS
+Exec=phantom-settings
+Icon=phantom-settings
+Terminal=false
+Categories=Settings;System;GTK;
+Keywords=settings;preferences;system;configuration;
+StartupNotify=true

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Phantom Files
+GenericName=File Manager
+Comment=Dual-pane file manager for Phantom OS
+Exec=phantom-files
+Icon=phantom-files
+Terminal=false
+Categories=System;FileTools;FileManager;
+Keywords=files;folders;browse;explorer;
+StartupNotify=true
+MimeType=inode/directory;

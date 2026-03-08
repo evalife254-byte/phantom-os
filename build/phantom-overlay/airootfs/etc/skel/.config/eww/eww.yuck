@@ -1,0 +1,43 @@
+;; Phantom OS — Desktop Widget
+;; Theme: Ghost Protocol
+
+(defwidget desktop-widget []
+  (box :class "desktop-widget"
+       :orientation "v"
+       :space-evenly false
+       :spacing 20
+    (box :class "clock-widget"
+         :orientation "v"
+         :space-evenly false
+      (label :class "time" :text time)
+      (label :class "date" :text date))
+    
+    (box :class "media-widget"
+         :orientation "v"
+         :space-evenly false
+         :visible {media-title != ""}
+      (label :class "media-icon" :text "🎵")
+      (label :class "media-title" :text media-title :limit-width 30)
+      (label :class "media-artist" :text media-artist :limit-width 30))))
+
+(defpoll time :interval "1s"
+  "date '+%H:%M'")
+
+(defpoll date :interval "60s"
+  "date '+%A, %B %d'")
+
+(defpoll media-title :interval "2s"
+  "playerctl metadata --format '{{ title }}' 2>/dev/null || echo ''")
+
+(defpoll media-artist :interval "2s"
+  "playerctl metadata --format '{{ artist }}' 2>/dev/null || echo ''")
+
+(defwindow desktop-widget
+  :monitor 0
+  :geometry (geometry :x "50%"
+                      :y "30%"
+                      :anchor "center")
+  :stacking "bg"
+  :exclusive false
+  :focusable false
+  (desktop-widget))

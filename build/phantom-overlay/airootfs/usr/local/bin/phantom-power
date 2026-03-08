@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+# Phantom OS Power Profile Manager
+# Manages CPU governor and power settings
+
+set -euo pipefail
+
+PROFILE_FILE="/etc/phantom/power-profile"
+
+usage() {
+  cat <<EOF
+Phantom Power Profile Manager
+
+Usage: phantom-power <command> [profile]
+
+Commands:
+  list                List available power profiles
+  current             Show current power profile
+  set <profile>       Set power profile
+  auto                Auto-detect and set optimal profile
+
+Profiles:
+  performance         Maximum performance, higher power usage
+  balanced            Balance between performance and efficiency
+  powersave           Maximum battery life, reduced performance
+
+Examples:
+  phantom-power set performance
+  phantom-power current
+  phantom-power auto
+EOF
+}
+
+list_profiles() {
+  echo "Available power profiles:"
+  echo ""
+  echo "  performance  - Maximum CPU performance, turbo boost enabled"
+  echo "  balanced     - Balanced performance and efficiency (default)"
+  echo "  powersave    - Maximum battery life, reduced frequencies"
+  echo ""
+}
+
+get_current_profile() {
+  if [[ -f "$PROFILE_FILE" ]]; then
+    cat "$PROFILE_FILE"
+  else
+    echo "balanced"
+  fi
+}
+
+set_cpu_governor() {
+  local governor="$1"
+  
+  for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+    if [[ -w "$cpu" ]]; then
+      echo "$governor" > "$cpu" 2>/dev/null || true
+    fi
+  done
+}
+
+set_cpu_boost() {
+  local state="$1"
+  
+  # Intel
+  if [[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then
+    if [[ "$state" == "1" ]]; then
+      echo "0" > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+    else
+      echo "1" > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+    fi
+  fi
+  
+  # AMD
+  if [[ -f /sys/devices/system/cpu/cpufreq/boost ]]; then
+    echo "$state" > /sys/devices/system/cpu/cpufreq/boost 2>/dev/null || true
+  fi
+}
+
+set_profile() {
+  local profile="$1"
+  
+  case "$profile" in
+    performance)
+      echo "Setting performance profile..."
+      set_cpu_governor "performance"
+      set_cpu_boost "1"
+      
+      # Disable power saving features
+      for i in /sys/bus/*/devices/*/power/control; do
+        [[ -w "$i" ]] && echo "on" > "$i" 2>/dev/null || true
+      done
+      ;;
+      
+    balanced)
+      echo "Setting balanced profile..."
+      set_cpu_governor "schedutil"
+      set_cpu_boost "1"
+      
+      # Enable selective power saving
+      for i in /sys/bus/usb/devices/*/power/control; do
+        [[ -w "$i" ]] && echo "auto" > "$i" 2>/dev/null || true
+      done
+      ;;
+      
+    powersave)
+      echo "Setting powersave profile..."
+      set_cpu_governor "powersave"
+      set_cpu_boost "0"
+      
+      # Enable aggressive power saving
+      for i in /sys/bus/*/devices/*/power/control; do
+        [[ -w "$i" ]] && echo "auto" > "$i" 2>/dev/null || true
+      done
+      ;;
+      
+    *)
+      echo "Error: Unknown profile: $profile" >&2
+      echo "Run 'phantom-power list' to see available profiles" >&2
+      exit 1
+      ;;
+  esac
+  
+  # Save profile
+  mkdir -p "$(dirname "$PROFILE_FILE")"
+  echo "$profile" > "$PROFILE_FILE"
+  
+  # Notify user
+  if command -v notify-send >/dev/null; then
+    notify-send "Phantom Power" "Power profile set to: $profile" -i battery
+  fi
+  
+  echo "Power profile set to: $profile"
+}
+
+auto_profile() {
+  # Check if on battery
+  local on_battery=false
+  
+  for bat in /sys/class/power_supply/BAT*; do
+    if [[ -f "$bat/status" ]]; then
+      status=$(cat "$bat/status")
+      if [[ "$status" == "Discharging" ]]; then
+        on_battery=true
+        break
+      fi
+    fi
+  done
+  
+  if $on_battery; then
+    echo "On battery power, setting balanced profile"
+    set_profile "balanced"
+  else
+    echo "On AC power, setting performance profile"
+    set_profile "performance"
+  fi
+}
+
+# Check for root
+if [[ $EUID -ne 0 ]]; then
+  echo "Error: This command requires root privileges" >&2
+  echo "Run with: sudo phantom-power $*" >&2
+  exit 1
+fi
+
+# Main command dispatcher
+case "${1:-}" in
+  list)
+    list_profiles
+    ;;
+  current)
+    echo "Current power profile: $(get_current_profile)"
+    ;;
+  set)
+    if [[ -z "${2:-}" ]]; then
+      echo "Error: Profile name required" >&2
+      echo "Usage: phantom-power set <profile>" >&2
+      exit 1
+    fi
+    set_profile "$2"
+    ;;
+  auto)
+    auto_profile
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    echo "Error: Unknown command: ${1:-}" >&2
+    echo "" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

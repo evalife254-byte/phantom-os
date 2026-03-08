@@ -1,3 +1,10 @@
+/* Phantom OS — Waybar Three-Capsule Layout
+ * Theme: Ghost Protocol
+ * Left: System resources & toggles
+ * Center: Clock & calendar
+ * Right: Notifications & media controls
+ */
+
 * {
   border: none;
   font-family: "Noto Sans", sans-serif;
@@ -6,35 +13,123 @@
 }
 
 window#waybar {
-  background: rgba(10, 10, 15, 0.85);
+  background: transparent;
   color: #E0E0E8;
 }
 
-#cpu,
-#memory,
+/* ── Capsule containers ────────────────────────────────── */
+#custom-left-capsule-start,
+#custom-power,
+#custom-user,
 #battery,
 #network,
-#pulseaudio,
-#tray,
-#clock {
-  padding: 4px 12px;
-  margin: 4px 2px;
-  border-radius: 8px;
-  background: rgba(20, 20, 32, 0.6);
+#cpu,
+#memory,
+#disk,
+#custom-left-capsule-end {
+  background: rgba(26, 26, 46, 0.85);
+  padding: 6px 10px;
+  margin: 0;
 }
 
+#custom-left-capsule-start {
+  border-radius: 16px 0 0 16px;
+  border-left: 1px solid rgba(0, 240, 255, 0.25);
+  border-top: 1px solid rgba(0, 240, 255, 0.25);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  padding-left: 14px;
+}
+
+#custom-left-capsule-end {
+  border-radius: 0 16px 16px 0;
+  border-right: 1px solid rgba(0, 240, 255, 0.25);
+  border-top: 1px solid rgba(0, 240, 255, 0.25);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  padding-right: 14px;
+}
+
+#custom-center-capsule-start,
+#clock,
+#custom-center-capsule-end {
+  background: rgba(26, 26, 46, 0.85);
+  padding: 6px 10px;
+  margin: 0;
+}
+
+#custom-center-capsule-start {
+  border-radius: 16px 0 0 16px;
+  border-left: 1px solid rgba(0, 240, 255, 0.25);
+  border-top: 1px solid rgba(0, 240, 255, 0.25);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  padding-left: 14px;
+}
+
+#custom-center-capsule-end {
+  border-radius: 0 16px 16px 0;
+  border-right: 1px solid rgba(0, 240, 255, 0.25);
+  border-top: 1px solid rgba(0, 240, 255, 0.25);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  padding-right: 14px;
+}
+
+#custom-right-capsule-start,
+#idle_inhibitor,
+#pulseaudio,
+#custom-media,
+#tray,
+#custom-notifications,
+#custom-settings,
+#custom-right-capsule-end {
+  background: rgba(26, 26, 46, 0.85);
+  padding: 6px 10px;
+  margin: 0;
+}
+
+#custom-right-capsule-start {
+  border-radius: 16px 0 0 16px;
+  border-left: 1px solid rgba(0, 240, 255, 0.25);
+  border-top: 1px solid rgba(0, 240, 255, 0.25);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  padding-left: 14px;
+}
+
+#custom-right-capsule-end {
+  border-radius: 0 16px 16px 0;
+  border-right: 1px solid rgba(0, 240, 255, 0.25);
+  border-top: 1px solid rgba(0, 240, 255, 0.25);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  padding-right: 14px;
+}
+
+/* ── Module styling ──────────────────────────────────── */
 #clock {
   color: #00F0FF;
   font-weight: 700;
+  font-size: 14px;
   padding-left: 16px;
   padding-right: 16px;
 }
 
+#custom-power,
+#custom-user,
+#custom-notifications,
+#custom-settings {
+  font-size: 16px;
+  padding: 6px 8px;
+}
+
+#custom-power:hover,
+#custom-user:hover,
 #cpu:hover,
 #memory:hover,
+#disk:hover,
 #battery:hover,
 #network:hover,
-#pulseaudio:hover {
+#idle_inhibitor:hover,
+#pulseaudio:hover,
+#custom-media:hover,
+#custom-notifications:hover,
+#custom-settings:hover {
   background: rgba(0, 240, 255, 0.15);
   color: #00F0FF;
 }
@@ -45,6 +140,13 @@ window#waybar {
 
 #battery.critical {
   color: #FF6B6B;
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.5;
+  }
 }
 
 #network.disconnected {
@@ -53,4 +155,21 @@ window#waybar {
 
 #pulseaudio.muted {
   color: #6B6B80;
+}
+
+#idle_inhibitor.activated {
+  color: #7B68EE;
+}
+
+#custom-media {
+  color: #7B68EE;
+}
+
+#tray > .passive {
+  -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+  -gtk-icon-effect: highlight;
+  color: #00F0FF;
 }

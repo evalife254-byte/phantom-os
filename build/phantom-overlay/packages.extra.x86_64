@@ -24,3 +24,27 @@ sddm
 qt5-quickcontrols2
 qt5-graphicaleffects
 nwg-dock-hyprland
+wlogout
+pavucontrol
+swww
+eww
+python
+python-gobject
+gtk3
+systemd-zram-generator
+pciutils
+usbutils
+lm_sensors
+calamares
+plymouth
+gtk4
+libadwaita
+firefox
+foot
+# Phase 6: Media & Development
+mpv
+code
+libreoffice-still
+# Phase 8: PHM Package Manager dependencies
+python-toml
+python-requests

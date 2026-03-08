@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+# Phantom OS Wallpaper Manager
+# Manages desktop wallpapers with swww
+
+set -euo pipefail
+
+WALLPAPER_DIR="/usr/share/backgrounds/phantom"
+CACHE_DIR="${HOME}/.cache/phantom"
+CURRENT_WALLPAPER_FILE="${CACHE_DIR}/current-wallpaper"
+
+usage() {
+  cat <<EOF
+Phantom Wallpaper Manager
+
+Usage: phantom-wallpaper <command> [options]
+
+Commands:
+  set <path>          Set wallpaper from file path
+  random              Set random wallpaper from collection
+  next                Cycle to next wallpaper
+  current             Show current wallpaper path
+  list                List available wallpapers
+
+Examples:
+  phantom-wallpaper random
+  phantom-wallpaper set ~/Pictures/my-wallpaper.jpg
+EOF
+}
+
+ensure_swww() {
+  if ! command -v swww &>/dev/null; then
+    echo "Error: swww not installed" >&2
+    exit 1
+  fi
+  
+  # Initialize swww if not running
+  if ! swww query &>/dev/null; then
+    swww init
+    sleep 1
+  fi
+}
+
+set_wallpaper() {
+  local path="$1"
+  
+  if [[ ! -f "$path" ]]; then
+    echo "Error: File not found: $path" >&2
+    exit 1
+  fi
+  
+  ensure_swww
+  
+  # Set wallpaper with Ghost Protocol transition
+  swww img "$path" --transition-type any --transition-fps 60 --transition-duration 1
+  
+  # Save current wallpaper
+  mkdir -p "$(dirname "$CURRENT_WALLPAPER_FILE")"
+  echo "$path" > "$CURRENT_WALLPAPER_FILE"
+  
+  echo "Wallpaper set: $(basename "$path")"
+}
+
+set_random() {
+  if [[ ! -d "$WALLPAPER_DIR" ]]; then
+    echo "Error: Wallpaper directory not found: $WALLPAPER_DIR" >&2
+    exit 1
+  fi
+  
+  # Find all wallpapers
+  mapfile -t wallpapers < <(find "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) 2>/dev/null)
+  
+  if [[ ${#wallpapers[@]} -eq 0 ]]; then
+    echo "Error: No wallpapers found in $WALLPAPER_DIR" >&2
+    exit 1
+  fi
+  
+  # Select random wallpaper
+  local random_index=$((RANDOM % ${#wallpapers[@]}))
+  local selected="${wallpapers[$random_index]}"
+  
+  set_wallpaper "$selected"
+}
+
+set_next() {
+  if [[ ! -d "$WALLPAPER_DIR" ]]; then
+    echo "Error: Wallpaper directory not found" >&2
+    exit 1
+  fi
+  
+  mapfile -t wallpapers < <(find "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) | sort)
+  
+  if [[ ${#wallpapers[@]} -eq 0 ]]; then
+    echo "Error: No wallpapers found" >&2
+    exit 1
+  fi
+  
+  # Get current wallpaper index
+  local current=""
+  if [[ -f "$CURRENT_WALLPAPER_FILE" ]]; then
+    current=$(cat "$CURRENT_WALLPAPER_FILE")
+  fi
+  
+  # Find next wallpaper
+  local next_index=0
+  for i in "${!wallpapers[@]}"; do
+    if [[ "${wallpapers[$i]}" == "$current" ]]; then
+      next_index=$(((i + 1) % ${#wallpapers[@]}))
+      break
+    fi
+  done
+  
+  set_wallpaper "${wallpapers[$next_index]}"
+}
+
+show_current() {
+  if [[ -f "$CURRENT_WALLPAPER_FILE" ]]; then
+    cat "$CURRENT_WALLPAPER_FILE"
+  else
+    echo "No wallpaper set"
+  fi
+}
+
+list_wallpapers() {
+  if [[ -d "$WALLPAPER_DIR" ]]; then
+    echo "Available wallpapers:"
+    find "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) | while read -r path; do
+      echo "  - $(basename "$path")"
+    done
+  else
+    echo "Wallpaper directory not found: $WALLPAPER_DIR"
+  fi
+}
+
+# Command dispatcher
+case "${1:-}" in
+  set)
+    if [[ -z "${2:-}" ]]; then
+      echo "Error: Wallpaper path required" >&2
+      exit 1
+    fi
+    set_wallpaper "$2"
+    ;;
+  random)
+    set_random
+    ;;
+  next)
+    set_next
+    ;;
+  current)
+    show_current
+    ;;
+  list)
+    list_wallpapers
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    echo "Error: Unknown command: ${1:-}" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

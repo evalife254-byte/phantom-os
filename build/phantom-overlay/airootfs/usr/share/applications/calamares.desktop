@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Install Phantom OS
+GenericName=System Installer
+Keywords=calamares;system;installer;
+TryExec=calamares
+Exec=sudo calamares
+Comment=Install Phantom OS to your computer
+Icon=calamares
+Terminal=false
+StartupNotify=true
+Categories=System;Qt;
+X-AppStream-Ignore=true

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Phantom Files App Icon - Dual folders representing dual-pane -->
+  
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#0A0A0F" stroke="#00F0FF" stroke-width="2"/>
+  
+  <!-- Left folder (slightly behind) -->
+  <path d="M 14 22 L 14 40 C 14 41 15 42 16 42 L 30 42 C 31 42 32 41 32 40 L 32 28 C 32 27 31 26 30 26 L 22 26 L 20 24 L 16 24 C 15 24 14 25 14 26 Z" 
+        fill="#1A1A2E" 
+        stroke="#00F0FF" 
+        stroke-width="1.5"
+        opacity="0.7"/>
+  
+  <!-- Right folder (in front) -->
+  <path d="M 32 26 L 32 44 C 32 45 33 46 34 46 L 48 46 C 49 46 50 45 50 44 L 50 32 C 50 31 49 30 48 30 L 40 30 L 38 28 L 34 28 C 33 28 32 29 32 30 Z" 
+        fill="#1A1A2E" 
+        stroke="#00F0FF" 
+        stroke-width="1.5"/>
+  
+  <!-- Folder tab highlights -->
+  <path d="M 14 26 L 14 28 L 32 28 L 32 26 L 22 26 L 20 24 L 16 24 C 15 24 14 25 14 26 Z" 
+        fill="#00F0FF" 
+        fill-opacity="0.3"/>
+  
+  <path d="M 32 30 L 32 32 L 50 32 L 50 30 L 40 30 L 38 28 L 34 28 C 33 28 32 29 32 30 Z" 
+        fill="#00F0FF" 
+        fill-opacity="0.3"/>
+  
+  <!-- Phantom glow effect -->
+  <circle cx="32" cy="32" r="28" fill="none" stroke="#00F0FF" stroke-width="1" opacity="0.2"/>
+</svg>

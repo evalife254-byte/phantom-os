@@ -1,0 +1,11 @@
+# Phantom OS — I/O Scheduler optimization
+# Set optimal schedulers for different device types
+
+# NVMe devices - use none (hardware queue is optimal)
+ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"
+
+# SSD devices - use mq-deadline for better latency
+ACTION=="add|change", KERNEL=="sd[a-z]|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
+
+# HDD devices - use bfq for better throughput
+ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"

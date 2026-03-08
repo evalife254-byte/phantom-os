@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Video file - orange accent -->
+  <path d="M 12 6 L 12 42 L 36 42 L 36 16 L 26 6 Z" 
+        fill="#141420" 
+        stroke="#FF6B35" 
+        stroke-width="1.5"/>
+  
+  <path d="M 26 6 L 26 16 L 36 16" 
+        fill="#1A1A2E" 
+        stroke="#FF6B35" 
+        stroke-width="1.5"/>
+  
+  <!-- Play button -->
+  <polygon points="20,22 20,34 30,28" fill="#FF6B35"/>
+</svg>

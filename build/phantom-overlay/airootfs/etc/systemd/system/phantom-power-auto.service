@@ -1,0 +1,11 @@
+[Unit]
+Description=Phantom OS Auto Power Profile
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/phantom-power auto
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

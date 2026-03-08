@@ -1,0 +1,118 @@
+name: Validate Phantom OS
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint-scripts:
+    name: Lint Shell Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Lint bootstrap script
+        run: shellcheck scripts/bootstrap-phantom-v1.sh
+
+      - name: Lint overlay script
+        run: shellcheck scripts/apply-phantom-overlay.sh
+
+      - name: Lint validation script
+        run: shellcheck scripts/validate-phantom-overlay.sh
+
+      - name: Lint build script
+        run: shellcheck scripts/build-phantom-iso.sh
+
+      - name: Lint theme script
+        run: shellcheck build/phantom-overlay/airootfs/usr/local/bin/phantom-theme
+
+      - name: Lint GPU setup script
+        run: shellcheck build/phantom-overlay/airootfs/usr/local/bin/phantom-gpu-setup
+
+      - name: Lint power script
+        run: shellcheck build/phantom-overlay/airootfs/usr/local/bin/phantom-power
+
+      - name: Lint customization script
+        run: shellcheck build/phantom-overlay/airootfs/root/customize_airootfs.sh
+
+  validate-overlay:
+    name: Validate Overlay Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 ripgrep
+
+      - name: Run overlay validation
+        run: ./scripts/validate-phantom-overlay.sh
+
+  validate-json:
+    name: Validate JSON Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate theme JSON files
+        run: |
+          python3 -m json.tool build/phantom-overlay/airootfs/etc/skel/.config/phantom/theme.json > /dev/null
+          python3 -m json.tool build/phantom-overlay/airootfs/usr/share/phantom/themes/ghost-protocol.json > /dev/null
+          python3 -m json.tool build/phantom-overlay/airootfs/usr/share/phantom/themes/specter.json > /dev/null
+          python3 -m json.tool build/phantom-overlay/airootfs/usr/share/phantom/themes/wraith.json > /dev/null
+          python3 -m json.tool build/phantom-overlay/airootfs/usr/share/phantom/themes/eclipse.json > /dev/null
+          python3 -m json.tool build/phantom-overlay/airootfs/usr/share/phantom/themes/daylight.json > /dev/null
+
+      - name: Validate Waybar config
+        run: python3 -c "import json; json.load(open('build/phantom-overlay/airootfs/etc/skel/.config/waybar/config.jsonc'))"
+
+      - name: Validate dock config
+        run: python3 -m json.tool build/phantom-overlay/airootfs/etc/skel/.config/nwg-dock-hyprland/config.json > /dev/null
+
+  check-executables:
+    name: Check Script Permissions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check main scripts are executable
+        run: |
+          test -x scripts/bootstrap-phantom-v1.sh
+          test -x scripts/apply-phantom-overlay.sh
+          test -x scripts/validate-phantom-overlay.sh
+          test -x scripts/build-phantom-iso.sh
+
+  dry-run-bootstrap:
+    name: Dry Run Bootstrap
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install git
+        run: sudo apt-get update && sudo apt-get install -y git
+
+      - name: Run bootstrap (dry run)
+        run: |
+          ./scripts/bootstrap-phantom-v1.sh /tmp/phantom-bootstrap
+          ls -la build/archiso-profile/
+
+      - name: Apply overlay
+        run: ./scripts/apply-phantom-overlay.sh
+
+      - name: Validate merged profile
+        run: |
+          test -f build/archiso-profile/packages.x86_64
+          test -d build/archiso-profile/airootfs
+          ./scripts/validate-phantom-overlay.sh

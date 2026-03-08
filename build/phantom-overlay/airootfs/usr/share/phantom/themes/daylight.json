@@ -1,0 +1,17 @@
+{
+  "name": "daylight",
+  "display_name": "Daylight",
+  "description": "Light mode variant with soft colors and high contrast",
+  "colors": {
+    "background": "#F5F5F7",
+    "surface": "#FFFFFF",
+    "panel": "#E8E8EA",
+    "accent_primary": "#0071E3",
+    "accent_secondary": "#5E5CE6",
+    "text_primary": "#1D1D1F",
+    "text_secondary": "#6E6E73",
+    "warning": "#F59E0B",
+    "critical": "#DC2626",
+    "success": "#059669"
+  }
+}

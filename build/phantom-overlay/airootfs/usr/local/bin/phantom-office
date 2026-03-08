@@ -1,0 +1,244 @@
+#!/usr/bin/env bash
+# Phantom Office - LibreOffice integration for Phantom OS
+# Custom Phantom OS theming and defaults for LibreOffice
+
+set -euo pipefail
+
+OFFICE_CONFIG_DIR="${HOME}/.config/libreoffice/4/user"
+PHANTOM_OFFICE_DIR="${HOME}/.config/phantom-office"
+
+# Setup Phantom Office configuration
+setup_config() {
+    echo "Setting up Phantom Office configuration..."
+    
+    mkdir -p "$OFFICE_CONFIG_DIR"
+    mkdir -p "$PHANTOM_OFFICE_DIR"
+    
+    # Create registry modifications for Ghost Protocol theme
+    cat > "$OFFICE_CONFIG_DIR/registrymodifications.xcu" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+<!-- Phantom Office - Ghost Protocol Theme Configuration -->
+
+<!-- Application Colors -->
+<item oor:path="/org.openoffice.Office.UI/ColorScheme">
+    <prop oor:name="ApplicationBackground" oor:op="fuse">
+        <value>0x0A0A0F</value>
+    </prop>
+    <prop oor:name="DocumentBackground" oor:op="fuse">
+        <value>0x141420</value>
+    </prop>
+    <prop oor:name="FontColor" oor:op="fuse">
+        <value>0xE0E0E8</value>
+    </prop>
+</item>
+
+<!-- UI Settings -->
+<item oor:path="/org.openoffice.Office.Common/Misc">
+    <prop oor:name="FirstStartWizardCompleted" oor:op="fuse">
+        <value xsi:type="xs:boolean">true</value>
+    </prop>
+    <prop oor:name="Personas" oor:op="fuse">
+        <value xsi:type="xs:boolean">false</value>
+    </prop>
+</item>
+
+<!-- View Settings -->
+<item oor:path="/org.openoffice.Office.Common/View">
+    <prop oor:name="IconTheme" oor:op="fuse">
+        <value>elementary</value>
+    </prop>
+    <prop oor:name="IconSize" oor:op="fuse">
+        <value xsi:type="xs:int">24</value>
+    </prop>
+    <prop oor:name="SidebarVisible" oor:op="fuse">
+        <value xsi:type="xs:boolean">true</value>
+    </prop>
+</item>
+
+<!-- Load/Save Settings -->
+<item oor:path="/org.openoffice.Office.Common/LoadSave">
+    <prop oor:name="AutoSave" oor:op="fuse">
+        <value xsi:type="xs:boolean">true</value>
+    </prop>
+    <prop oor:name="AutoSaveInterval" oor:op="fuse">
+        <value xsi:type="xs:int">10</value>
+    </prop>
+    <prop oor:name="CreateBackup" oor:op="fuse">
+        <value xsi:type="xs:boolean">true</value>
+    </prop>
+</item>
+
+<!-- Writer Settings -->
+<item oor:path="/org.openoffice.Office.Writer/Layout">
+    <prop oor:name="Ruler" oor:op="fuse">
+        <value xsi:type="xs:boolean">true</value>
+    </prop>
+</item>
+
+<!-- Calc Settings -->
+<item oor:path="/org.openoffice.Office.Calc/Grid">
+    <prop oor:name="GridLines" oor:op="fuse">
+        <value xsi:type="xs:boolean">true</value>
+    </prop>
+    <prop oor:name="GridColor" oor:op="fuse">
+        <value xsi:type="xs:int">0x00F0FF</value>
+    </prop>
+</item>
+
+</oor:items>
+EOF
+    
+    # Create Phantom Office palette
+    mkdir -p "$OFFICE_CONFIG_DIR/config"
+    cat > "$OFFICE_CONFIG_DIR/config/phantom-palette.soc" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<office:color-table xmlns:office="http://openoffice.org/2000/office">
+    <!-- Phantom Office - Ghost Protocol Color Palette -->
+    
+    <!-- Primary Colors -->
+    <draw:color draw:name="Phantom Background" draw:color="#0A0A0F" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    <draw:color draw:name="Phantom Surface" draw:color="#141420" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    <draw:color draw:name="Phantom Panel" draw:color="#1A1A2E" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    
+    <!-- Accent Colors -->
+    <draw:color draw:name="Phantom Cyan" draw:color="#00F0FF" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    <draw:color draw:name="Phantom Purple" draw:color="#7B68EE" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    <draw:color draw:name="Phantom Yellow" draw:color="#FFD93D" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    <draw:color draw:name="Phantom Red" draw:color="#FF6B6B" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    <draw:color draw:name="Phantom Green" draw:color="#6BCF7F" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    
+    <!-- Text Colors -->
+    <draw:color draw:name="Phantom Text Primary" draw:color="#E0E0E8" xmlns:draw="http://openoffice.org/2000/drawing"/>
+    <draw:color draw:name="Phantom Text Secondary" draw:color="#6B6B80" xmlns:draw="http://openoffice.org/2000/drawing"/>
+</office:color-table>
+EOF
+    
+    # Create toolbar configuration
+    cat > "$PHANTOM_OFFICE_DIR/toolbar.xml" <<'EOF'
+<!-- Phantom Office - Custom Toolbar Layout -->
+<toolbar:toolbar xmlns:toolbar="http://openoffice.org/2001/toolbar">
+    <toolbar:toolbaritem xlink:href=".uno:New" xmlns:xlink="http://www.w3.org/1999/xlink"/>
+    <toolbar:toolbaritem xlink:href=".uno:Open"/>
+    <toolbar:toolbaritem xlink:href=".uno:Save"/>
+    <toolbar:toolbarbreak/>
+    <toolbar:toolbaritem xlink:href=".uno:Undo"/>
+    <toolbar:toolbaritem xlink:href=".uno:Redo"/>
+    <toolbar:toolbarbreak/>
+    <toolbar:toolbaritem xlink:href=".uno:Cut"/>
+    <toolbar:toolbaritem xlink:href=".uno:Copy"/>
+    <toolbar:toolbaritem xlink:href=".uno:Paste"/>
+    <toolbar:toolbarbreak/>
+    <toolbar:toolbaritem xlink:href=".uno:Print"/>
+    <toolbar:toolbaritem xlink:href=".uno:ExportToPDF"/>
+</toolbar:toolbar>
+EOF
+    
+    echo "Phantom Office configuration complete"
+    echo ""
+    echo "Ghost Protocol theme applied to:"
+    echo "  - Document backgrounds (dark)"
+    echo "  - UI colors (Phantom palette)"
+    echo "  - Auto-save enabled (10 min)"
+    echo "  - Backups enabled"
+    echo ""
+    echo "Launch with: phantom-office"
+}
+
+# Create launcher wrapper
+launch_office() {
+    local app="$1"
+    shift
+    
+    # Check if LibreOffice is installed
+    if ! command -v "$app" &>/dev/null; then
+        echo "Error: LibreOffice is not installed"
+        echo "Install it with: sudo pacman -S libreoffice-still"
+        exit 1
+    fi
+    
+    # Setup config if needed
+    if [[ ! -f "$OFFICE_CONFIG_DIR/registrymodifications.xcu" ]]; then
+        setup_config
+    fi
+    
+    # Launch with Phantom branding
+    export SAL_USE_VCLPLUGIN=gtk3
+    export GTK_THEME=Phantom
+    
+    exec "$app" "$@"
+}
+
+# Show usage
+usage() {
+    cat <<'EOF'
+Phantom Office - LibreOffice for Phantom OS
+
+Usage: phantom-office [component] [options] [files...]
+
+Components:
+    writer      Start Writer (default)
+    calc        Start Calc
+    impress     Start Impress
+    draw        Start Draw
+    math        Start Math
+    base        Start Base
+
+Options:
+    --setup         Initialize Phantom Office configuration
+    --help          Show this help
+
+Examples:
+    phantom-office                  # Start Writer
+    phantom-office calc             # Start Calc
+    phantom-office writer doc.odt   # Open document
+    phantom-office --setup          # Setup configuration
+
+Features:
+    ✓ Ghost Protocol color scheme
+    ✓ Dark document backgrounds
+    ✓ Auto-save enabled
+    ✓ Custom Phantom palette
+    ✓ Optimized toolbars
+EOF
+}
+
+# Main command dispatcher
+case "${1:-writer}" in
+    --setup)
+        setup_config
+        ;;
+    --help|-h)
+        usage
+        exit 0
+        ;;
+    writer)
+        shift 2>/dev/null || true
+        launch_office libreoffice --writer "$@"
+        ;;
+    calc)
+        shift 2>/dev/null || true
+        launch_office libreoffice --calc "$@"
+        ;;
+    impress)
+        shift 2>/dev/null || true
+        launch_office libreoffice --impress "$@"
+        ;;
+    draw)
+        shift 2>/dev/null || true
+        launch_office libreoffice --draw "$@"
+        ;;
+    math)
+        shift 2>/dev/null || true
+        launch_office libreoffice --math "$@"
+        ;;
+    base)
+        shift 2>/dev/null || true
+        launch_office libreoffice --base "$@"
+        ;;
+    *)
+        # Assume it's a file, open with Writer
+        launch_office libreoffice --writer "$@"
+        ;;
+esac

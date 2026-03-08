@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+# Phantom OS Theme Manager
+# Manages theme switching and customization
+
+set -euo pipefail
+
+THEME_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/phantom"
+THEME_FILE="$THEME_DIR/theme.json"
+PRESETS_DIR="/usr/share/phantom/themes"
+USER_PRESETS_DIR="$THEME_DIR/themes"
+
+usage() {
+  cat <<EOF
+Phantom Theme Manager
+
+Usage: phantom-theme <command> [options]
+
+Commands:
+  list                List all available themes
+  apply <name>        Apply a theme preset
+  current             Show current theme
+  export <file>       Export current theme to file
+  import <file>       Import theme from file
+  edit                Open theme editor GUI
+  reload              Reload theme across all components
+
+Examples:
+  phantom-theme list
+  phantom-theme apply specter
+  phantom-theme export ~/my-theme.json
+  phantom-theme reload
+EOF
+}
+
+list_themes() {
+  echo "Available themes:"
+  echo ""
+  echo "  ghost-protocol  (default) - Neon cyan on deep black"
+  echo "  specter                   - Purple and blue mystique"
+  echo "  wraith                    - Green matrix aesthetic"
+  echo "  eclipse                   - Orange and red sunset"
+  echo "  daylight                  - Light mode variant"
+  echo ""
+  
+  if [[ -d "$USER_PRESETS_DIR" ]]; then
+    local custom_themes=($(ls "$USER_PRESETS_DIR"/*.json 2>/dev/null | xargs -n1 basename -s .json || true))
+    if [[ ${#custom_themes[@]} -gt 0 ]]; then
+      echo "Custom themes:"
+      for theme in "${custom_themes[@]}"; do
+        echo "  $theme"
+      done
+      echo ""
+    fi
+  fi
+}
+
+get_preset_path() {
+  local name="$1"
+  
+  # Check user presets first
+  if [[ -f "$USER_PRESETS_DIR/${name}.json" ]]; then
+    echo "$USER_PRESETS_DIR/${name}.json"
+    return 0
+  fi
+  
+  # Check system presets
+  if [[ -f "$PRESETS_DIR/${name}.json" ]]; then
+    echo "$PRESETS_DIR/${name}.json"
+    return 0
+  fi
+  
+  return 1
+}
+
+apply_theme() {
+  local name="$1"
+  local preset_path
+  
+  if ! preset_path=$(get_preset_path "$name"); then
+    echo "Error: Theme '$name' not found" >&2
+    echo "Run 'phantom-theme list' to see available themes" >&2
+    exit 1
+  fi
+  
+  echo "Applying theme: $name"
+  mkdir -p "$THEME_DIR"
+  cp "$preset_path" "$THEME_FILE"
+  
+  reload_theme
+  echo "Theme applied successfully"
+}
+
+current_theme() {
+  if [[ ! -f "$THEME_FILE" ]]; then
+    echo "No theme configured (using defaults)"
+    return
+  fi
+  
+  echo "Current theme:"
+  cat "$THEME_FILE"
+}
+
+export_theme() {
+  local output="$1"
+  
+  if [[ ! -f "$THEME_FILE" ]]; then
+    echo "Error: No theme configured" >&2
+    exit 1
+  fi
+  
+  cp "$THEME_FILE" "$output"
+  echo "Theme exported to: $output"
+}
+
+import_theme() {
+  local input="$1"
+  
+  if [[ ! -f "$input" ]]; then
+    echo "Error: File not found: $input" >&2
+    exit 1
+  fi
+  
+  # Validate JSON
+  if ! python3 -c "import json; json.load(open('$input'))" 2>/dev/null; then
+    echo "Error: Invalid JSON file" >&2
+    exit 1
+  fi
+  
+  mkdir -p "$THEME_DIR"
+  cp "$input" "$THEME_FILE"
+  
+  reload_theme
+  echo "Theme imported and applied"
+}
+
+reload_theme() {
+  echo "Reloading theme components..."
+  
+  # Reload Waybar
+  if pgrep -x waybar >/dev/null; then
+    pkill -SIGUSR2 waybar 2>/dev/null || true
+  fi
+  
+  # Reload eww widgets
+  if pgrep -x eww >/dev/null; then
+    eww reload 2>/dev/null || true
+  fi
+  
+  # Notify user
+  if command -v notify-send >/dev/null; then
+    notify-send "Phantom Theme" "Theme reloaded" -i preferences-desktop-theme
+  fi
+}
+
+edit_theme() {
+  # Launch GUI theme editor (placeholder for future implementation)
+  if command -v phantom-theme-editor >/dev/null; then
+    phantom-theme-editor
+  else
+    echo "GUI theme editor not yet implemented"
+    echo "Edit manually: $THEME_FILE"
+    ${EDITOR:-nano} "$THEME_FILE"
+  fi
+}
+
+# Main command dispatcher
+case "${1:-}" in
+  list)
+    list_themes
+    ;;
+  apply)
+    if [[ -z "${2:-}" ]]; then
+      echo "Error: Theme name required" >&2
+      echo "Usage: phantom-theme apply <name>" >&2
+      exit 1
+    fi
+    apply_theme "$2"
+    ;;
+  current)
+    current_theme
+    ;;
+  export)
+    if [[ -z "${2:-}" ]]; then
+      echo "Error: Output file required" >&2
+      echo "Usage: phantom-theme export <file>" >&2
+      exit 1
+    fi
+    export_theme "$2"
+    ;;
+  import)
+    if [[ -z "${2:-}" ]]; then
+      echo "Error: Input file required" >&2
+      echo "Usage: phantom-theme import <file>" >&2
+      exit 1
+    fi
+    import_theme "$2"
+    ;;
+  edit)
+    edit_theme
+    ;;
+  reload)
+    reload_theme
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    echo "Error: Unknown command: ${1:-}" >&2
+    echo "" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

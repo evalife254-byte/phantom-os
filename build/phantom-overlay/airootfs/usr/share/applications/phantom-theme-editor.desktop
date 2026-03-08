@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Phantom Theme Editor
+Comment=Customize Phantom OS theme colors
+Exec=phantom-theme-editor
+Icon=preferences-desktop-theme
+Terminal=false
+Categories=Settings;DesktopSettings;GTK;
+Keywords=theme;colors;appearance;customization;
+StartupNotify=true

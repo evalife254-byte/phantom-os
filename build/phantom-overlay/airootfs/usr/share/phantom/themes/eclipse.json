@@ -1,0 +1,17 @@
+{
+  "name": "eclipse",
+  "display_name": "Eclipse",
+  "description": "Orange and red sunset with warm dark tones",
+  "colors": {
+    "background": "#0F0A08",
+    "surface": "#1A1410",
+    "panel": "#2E1F1A",
+    "accent_primary": "#FF6B35",
+    "accent_secondary": "#F7931E",
+    "text_primary": "#F0E8E0",
+    "text_secondary": "#8B7B6B",
+    "warning": "#FBBF24",
+    "critical": "#DC2626",
+    "success": "#34D399"
+  }
+}

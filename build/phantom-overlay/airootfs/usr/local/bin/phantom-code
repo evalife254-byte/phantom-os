@@ -1,0 +1,293 @@
+#!/usr/bin/env bash
+# Phantom Code - VS Code wrapper for Phantom OS
+# Custom Phantom OS integration for Visual Studio Code
+
+set -euo pipefail
+
+CODE_CONFIG_DIR="${HOME}/.config/Code/User"
+PHANTOM_CODE_DIR="${HOME}/.config/phantom-code"
+
+# Setup Phantom Code configuration
+setup_config() {
+    echo "Setting up Phantom Code configuration..."
+    
+    mkdir -p "$CODE_CONFIG_DIR"
+    mkdir -p "$PHANTOM_CODE_DIR"
+    
+    # Create VS Code settings with Ghost Protocol theme
+    cat > "$CODE_CONFIG_DIR/settings.json" <<'EOF'
+{
+    // Phantom Code - VS Code Configuration
+    // Ghost Protocol Theme Settings
+    
+    // Workbench
+    "workbench.colorTheme": "Phantom Dark",
+    "workbench.iconTheme": "phantom-icons",
+    "workbench.tree.indent": 20,
+    "workbench.startupEditor": "welcomePage",
+    
+    // Editor
+    "editor.fontFamily": "'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace",
+    "editor.fontSize": 14,
+    "editor.lineHeight": 24,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.wordWrap": "on",
+    "editor.minimap.enabled": true,
+    "editor.minimap.side": "right",
+    "editor.scrollbar.vertical": "visible",
+    "editor.scrollbar.horizontal": "visible",
+    "editor.cursorStyle": "line",
+    "editor.cursorBlinking": "smooth",
+    
+    // Terminal
+    "terminal.integrated.fontFamily": "'JetBrains Mono', 'Fira Code', monospace",
+    "terminal.integrated.fontSize": 13,
+    "terminal.integrated.cursorStyle": "line",
+    "terminal.integrated.cursorBlinking": true,
+    
+    // Files
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 1000,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/node_modules": true,
+        "**/.phantom-cache": true
+    },
+    
+    // Window
+    "window.restoreWindows": "all",
+    "window.newWindowDimensions": "inherit",
+    
+    // Extensions
+    "extensions.autoUpdate": true,
+    
+    // Phantom OS Integration
+    "phantom-os.enabled": true,
+    "phantom-os.terminal.default": "kitty",
+    "phantom-os.theme.sync": true
+}
+EOF
+    
+    # Create Phantom Dark color theme
+    mkdir -p "$CODE_CONFIG_DIR/../extensions/phantom-dark-theme/themes"
+    cat > "$CODE_CONFIG_DIR/../extensions/phantom-dark-theme/package.json" <<'EOF'
+{
+    "name": "phantom-dark-theme",
+    "displayName": "Phantom Dark Theme",
+    "description": "Ghost Protocol theme for VS Code",
+    "version": "1.0.0",
+    "publisher": "phantom-os",
+    "engines": {
+        "vscode": "^1.74.0"
+    },
+    "categories": ["Themes"],
+    "contributes": {
+        "themes": [
+            {
+                "label": "Phantom Dark",
+                "uiTheme": "vs-dark",
+                "path": "./themes/phantom-dark-color-theme.json"
+            }
+        ]
+    }
+}
+EOF
+    
+    cat > "$CODE_CONFIG_DIR/../extensions/phantom-dark-theme/themes/phantom-dark-color-theme.json" <<'EOF'
+{
+    "name": "Phantom Dark",
+    "type": "dark",
+    "colors": {
+        "editor.background": "#0A0A0F",
+        "editor.foreground": "#E0E0E8",
+        "editor.lineHighlightBackground": "#141420",
+        "editor.selectionBackground": "#00F0FF33",
+        "editorCursor.foreground": "#00F0FF",
+        
+        "sideBar.background": "#141420",
+        "sideBar.foreground": "#E0E0E8",
+        "sideBar.border": "#1A1A2E",
+        
+        "activityBar.background": "#0A0A0F",
+        "activityBar.foreground": "#00F0FF",
+        "activityBar.border": "#1A1A2E",
+        
+        "titleBar.activeBackground": "#0A0A0F",
+        "titleBar.activeForeground": "#E0E0E8",
+        
+        "statusBar.background": "#1A1A2E",
+        "statusBar.foreground": "#E0E0E8",
+        "statusBar.border": "#00F0FF",
+        
+        "panel.background": "#141420",
+        "panel.border": "#1A1A2E",
+        
+        "terminal.background": "#0A0A0F",
+        "terminal.foreground": "#E0E0E8",
+        "terminal.ansiBlack": "#141420",
+        "terminal.ansiRed": "#FF6B6B",
+        "terminal.ansiGreen": "#6BCF7F",
+        "terminal.ansiYellow": "#FFD93D",
+        "terminal.ansiBlue": "#00F0FF",
+        "terminal.ansiMagenta": "#7B68EE",
+        "terminal.ansiCyan": "#00F0FF",
+        "terminal.ansiWhite": "#E0E0E8",
+        
+        "gitDecoration.modifiedResourceForeground": "#FFD93D",
+        "gitDecoration.deletedResourceForeground": "#FF6B6B",
+        "gitDecoration.untrackedResourceForeground": "#6BCF7F",
+        "gitDecoration.conflictingResourceForeground": "#FF6B6B"
+    },
+    "tokenColors": [
+        {
+            "name": "Comments",
+            "scope": ["comment", "punctuation.definition.comment"],
+            "settings": {
+                "fontStyle": "italic",
+                "foreground": "#6B6B80"
+            }
+        },
+        {
+            "name": "Keywords",
+            "scope": ["keyword", "storage.type", "storage.modifier"],
+            "settings": {
+                "foreground": "#00F0FF",
+                "fontStyle": "bold"
+            }
+        },
+        {
+            "name": "Strings",
+            "scope": ["string", "string.quoted", "string.template"],
+            "settings": {
+                "foreground": "#6BCF7F"
+            }
+        },
+        {
+            "name": "Numbers",
+            "scope": ["constant.numeric"],
+            "settings": {
+                "foreground": "#FFD93D"
+            }
+        },
+        {
+            "name": "Functions",
+            "scope": ["entity.name.function", "support.function"],
+            "settings": {
+                "foreground": "#7B68EE"
+            }
+        },
+        {
+            "name": "Classes",
+            "scope": ["entity.name.class", "entity.name.type"],
+            "settings": {
+                "foreground": "#FFD93D",
+                "fontStyle": "bold"
+            }
+        }
+    ]
+}
+EOF
+    
+    # Create keybindings
+    cat > "$CODE_CONFIG_DIR/keybindings.json" <<'EOF'
+[
+    {
+        "key": "ctrl+shift+t",
+        "command": "workbench.action.terminal.new",
+        "when": "terminalProcessSupported"
+    },
+    {
+        "key": "ctrl+shift+alt+t",
+        "command": "workbench.action.terminal.focus"
+    },
+    {
+        "key": "f12",
+        "command": "workbench.action.terminal.toggleTerminal"
+    }
+]
+EOF
+    
+    echo "Phantom Code configuration complete"
+    echo "Please install recommended extensions for full functionality"
+}
+
+# Show usage
+usage() {
+    cat <<'EOF'
+Phantom Code - VS Code for Phantom OS
+
+Usage: phantom-code [options] [path]
+
+Options:
+    --setup         Initialize Phantom Code configuration
+    --new-window    Open new window
+    --wait          Wait for window to close
+    --help          Show this help
+
+Keyboard Shortcuts:
+    Ctrl+Shift+T        New terminal
+    Ctrl+Shift+Alt+T    Focus terminal
+    F12                 Toggle terminal
+
+Examples:
+    phantom-code                    # Open current directory
+    phantom-code project/           # Open project folder
+    phantom-code --setup            # Setup configuration
+EOF
+}
+
+# Parse arguments
+CODE_ARGS=()
+NEW_WINDOW=false
+WAIT=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --setup)
+            setup_config
+            exit 0
+            ;;
+        --new-window)
+            NEW_WINDOW=true
+            shift
+            ;;
+        --wait)
+            WAIT=true
+            shift
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        *)
+            CODE_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Setup config if needed
+if [[ ! -f "$CODE_CONFIG_DIR/settings.json" ]]; then
+    setup_config
+fi
+
+# Build code command
+if $NEW_WINDOW; then
+    CODE_ARGS+=("--new-window")
+fi
+
+if $WAIT; then
+    CODE_ARGS+=("--wait")
+fi
+
+# Check if code is installed
+if ! command -v code &>/dev/null; then
+    echo "Error: Visual Studio Code is not installed"
+    echo "Install it with: sudo pacman -S code"
+    exit 1
+fi
+
+# Launch VS Code
+exec code "${CODE_ARGS[@]}"

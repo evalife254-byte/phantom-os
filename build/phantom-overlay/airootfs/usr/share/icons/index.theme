@@ -1,0 +1,30 @@
+[Icon Theme]
+Name=Phantom
+Comment=Ghost Protocol icon theme for Phantom OS
+Inherits=hicolor
+
+Directories=48x48/apps,48x48/places,scalable/apps,scalable/places
+
+[48x48/apps]
+Size=48
+Context=Applications
+Type=Fixed
+
+[48x48/places]
+Size=48
+Context=Places
+Type=Fixed
+
+[scalable/apps]
+Size=48
+Context=Applications
+Type=Scalable
+MinSize=1
+MaxSize=256
+
+[scalable/places]
+Size=48
+Context=Places
+Type=Scalable
+MinSize=1
+MaxSize=256

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="folderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1A1A2E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#141420;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="folderFront" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD93D;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#FFD93D;stop-opacity:0.1" />
+    </linearGradient>
+  </defs>
+  <!-- Folder back -->
+  <path d="M6 12 L6 40 L42 40 L42 16 L20 16 L16 12 Z" fill="url(#folderGrad)" stroke="#FFD93D" stroke-width="1"/>
+  <!-- Folder front -->
+  <path d="M6 18 L42 18 L42 40 L6 40 Z" fill="url(#folderFront)" stroke="#FFD93D" stroke-width="1"/>
+  <!-- Video camera icon -->
+  <rect x="16" y="26" width="14" height="10" rx="2" fill="#0A0A0F" stroke="#FFD93D" stroke-width="1"/>
+  <path d="M30 28 L34 26 L34 36 L30 34" fill="#0A0A0F" stroke="#FFD93D" stroke-width="1"/>
+</svg>

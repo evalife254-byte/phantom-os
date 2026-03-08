@@ -1,0 +1,37 @@
+{
+  "position": "bottom",
+  "alignment": "center",
+  "layer": "top",
+  "exclusive-zone": false,
+  "icon-size": 40,
+  "margin-top": 0,
+  "margin-bottom": 8,
+  "margin-left": 0,
+  "margin-right": 0,
+  "hotspot-delay": 0,
+  "autohide-delay": 0,
+  "output": "",
+  "launcher-cmd": "rofi -show drun",
+  "pinned": [
+    {
+      "app-id": "kitty",
+      "name": "Terminal",
+      "icon": "utilities-terminal"
+    },
+    {
+      "app-id": "firefox",
+      "name": "Browser",
+      "icon": "firefox"
+    },
+    {
+      "app-id": "phantom-files",
+      "name": "Files",
+      "icon": "system-file-manager"
+    },
+    {
+      "app-id": "code",
+      "name": "Code",
+      "icon": "code"
+    }
+  ]
+}

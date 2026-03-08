@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Phantom Office Writer
+Comment=Word processor for Phantom OS
+Exec=phantom-office writer
+Icon=phantom-office
+Terminal=false
+Categories=Office;WordProcessor;
+Keywords=office;word;document;writer;
+StartupNotify=true
+MimeType=application/vnd.oasis.opendocument.text;application/msword;application/vnd.openxmlformats-officedocument.wordprocessingml.document;

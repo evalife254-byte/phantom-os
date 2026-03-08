@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="folderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1A1A2E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#141420;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="folderFront" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#7B68EE;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#7B68EE;stop-opacity:0.1" />
+    </linearGradient>
+  </defs>
+  <!-- Folder back -->
+  <path d="M6 12 L6 40 L42 40 L42 16 L20 16 L16 12 Z" fill="url(#folderGrad)" stroke="#7B68EE" stroke-width="1"/>
+  <!-- Folder front -->
+  <path d="M6 18 L42 18 L42 40 L6 40 Z" fill="url(#folderFront)" stroke="#7B68EE" stroke-width="1"/>
+  <!-- Music note -->
+  <path d="M20 32 L20 24 L28 22 L28 30" stroke="#7B68EE" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <circle cx="18" cy="32" r="2" fill="#7B68EE"/>
+  <circle cx="26" cy="30" r="2" fill="#7B68EE"/>
+</svg>

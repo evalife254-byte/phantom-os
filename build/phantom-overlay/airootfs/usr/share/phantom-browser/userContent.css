@@ -1,0 +1,106 @@
+/* Phantom Browser - Ghost Protocol Theme for Web Content */
+/* userContent.css - Customizes Firefox internal pages */
+
+@-moz-document url("about:home"), url("about:newtab"), url("about:blank") {
+  body {
+    background-color: #0A0A0F !important;
+    color: #E0E0E8 !important;
+  }
+  
+  /* New tab page */
+  .outer-wrapper {
+    background-color: #0A0A0F !important;
+  }
+  
+  /* Search box */
+  .search-wrapper input {
+    background-color: #141420 !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    border-radius: 8px !important;
+    color: #E0E0E8 !important;
+  }
+  
+  .search-wrapper input:focus {
+    border-color: #00F0FF !important;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3) !important;
+  }
+  
+  /* Top sites */
+  .top-site-outer {
+    background-color: #141420 !important;
+    border: 1px solid rgba(0, 240, 255, 0.2) !important;
+    border-radius: 8px !important;
+  }
+  
+  .top-site-outer:hover {
+    background-color: #1A1A2E !important;
+    border-color: #00F0FF !important;
+  }
+  
+  .title {
+    color: #E0E0E8 !important;
+  }
+}
+
+@-moz-document url-prefix("about:") {
+  body {
+    background-color: #0A0A0F !important;
+    color: #E0E0E8 !important;
+  }
+  
+  /* Links */
+  a {
+    color: #00F0FF !important;
+  }
+  
+  a:hover {
+    color: #7B68EE !important;
+  }
+  
+  /* Buttons */
+  button {
+    background-color: #1A1A2E !important;
+    border: 1px solid #00F0FF !important;
+    border-radius: 6px !important;
+    color: #E0E0E8 !important;
+  }
+  
+  button:hover {
+    background-color: rgba(0, 240, 255, 0.15) !important;
+  }
+  
+  /* Tables */
+  table {
+    background-color: #141420 !important;
+    border: 1px solid rgba(0, 240, 255, 0.2) !important;
+  }
+  
+  th {
+    background-color: #1A1A2E !important;
+    color: #00F0FF !important;
+  }
+  
+  td {
+    border-color: rgba(0, 240, 255, 0.1) !important;
+  }
+}
+
+/* Reader mode */
+@-moz-document url-prefix("about:reader") {
+  body {
+    background-color: #0A0A0F !important;
+    color: #E0E0E8 !important;
+  }
+  
+  .container {
+    background-color: #141420 !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: #00F0FF !important;
+  }
+  
+  a {
+    color: #00F0FF !important;
+  }
+}

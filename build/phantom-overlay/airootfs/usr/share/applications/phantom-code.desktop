@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Phantom Code
+Comment=Code editor for Phantom OS
+Exec=phantom-code
+Icon=phantom-code
+Terminal=false
+Categories=Development;IDE;TextEditor;
+Keywords=code;editor;ide;programming;development;
+StartupNotify=true
+MimeType=text/plain;text/x-python;text/x-script;application/json;

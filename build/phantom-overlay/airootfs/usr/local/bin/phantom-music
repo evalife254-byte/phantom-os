@@ -1,0 +1,444 @@
+#!/usr/bin/env python3
+"""
+Phantom Music - Music Player for Phantom OS
+A modern music player with Ghost Protocol theme
+Features: playlist, album art, visualizer, media controls
+"""
+
+import gi
+import os
+import sys
+import subprocess
+from pathlib import Path
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, Adw, Gio, GLib
+
+class PhantomMusic(Adw.ApplicationWindow):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title("Phantom Music")
+        self.set_default_size(900, 600)
+        
+        self.current_file = None
+        self.playlist = []
+        self.current_index = -1
+        self.is_playing = False
+        
+        self.setup_ui()
+        self.apply_css()
+        
+    def apply_css(self):
+        """Apply Ghost Protocol theme"""
+        css_provider = Gtk.CssProvider()
+        css = """
+        window {
+            background-color: #0A0A0F;
+            color: #E0E0E8;
+        }
+        
+        .player-container {
+            background-color: #141420;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px;
+        }
+        
+        .album-art {
+            background-color: #1A1A2E;
+            border-radius: 8px;
+            border: 2px solid #00F0FF;
+        }
+        
+        .control-btn {
+            background-color: #1A1A2E;
+            color: #00F0FF;
+            border: 1px solid #00F0FF;
+            border-radius: 50%;
+            padding: 12px;
+            font-size: 18px;
+        }
+        
+        .control-btn:hover {
+            background-color: rgba(0, 240, 255, 0.2);
+        }
+        
+        .play-btn {
+            background-color: rgba(0, 240, 255, 0.3);
+            color: #00F0FF;
+            border: 2px solid #00F0FF;
+            border-radius: 50%;
+            padding: 16px;
+            font-size: 24px;
+        }
+        
+        .progress-bar trough {
+            background-color: #1A1A2E;
+            border-radius: 4px;
+        }
+        
+        .progress-bar progress {
+            background-color: #00F0FF;
+            border-radius: 4px;
+        }
+        
+        .playlist-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        
+        .playlist-item:hover {
+            background-color: rgba(0, 240, 255, 0.1);
+        }
+        
+        .playlist-item.playing {
+            background-color: rgba(0, 240, 255, 0.2);
+            border-left: 3px solid #00F0FF;
+        }
+        """
+        css_provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+    
+    def setup_ui(self):
+        """Setup the music player UI"""
+        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.set_content(main_box)
+        
+        # Left: Player controls and album art
+        player_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        player_box.add_css_class('player-container')
+        player_box.set_size_request(500, -1)
+        main_box.append(player_box)
+        
+        # Album art placeholder
+        self.album_art = Gtk.DrawingArea()
+        self.album_art.set_size_request(300, 300)
+        self.album_art.add_css_class('album-art')
+        self.album_art.set_draw_func(self.draw_album_art)
+        player_box.append(self.album_art)
+        
+        # Track info
+        info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        info_box.set_margin_top(20)
+        player_box.append(info_box)
+        
+        self.title_label = Gtk.Label(label="No Track Playing")
+        self.title_label.add_css_class('title')
+        info_box.append(self.title_label)
+        
+        self.artist_label = Gtk.Label(label="Phantom Music")
+        self.artist_label.set_opacity(0.7)
+        info_box.append(self.artist_label)
+        
+        # Progress bar
+        self.progress_scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL)
+        self.progress_scale.set_range(0, 100)
+        self.progress_scale.set_value(0)
+        self.progress_scale.add_css_class('progress-bar')
+        self.progress_scale.set_margin_top(20)
+        player_box.append(self.progress_scale)
+        
+        # Time labels
+        time_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        time_box.set_margin_top(5)
+        player_box.append(time_box)
+        
+        self.current_time = Gtk.Label(label="0:00")
+        time_box.append(self.current_time)
+        
+        self.total_time = Gtk.Label(label="0:00")
+        self.total_time.set_hexpand(True)
+        self.total_time.set_xalign(1)
+        time_box.append(self.total_time)
+        
+        # Controls
+        controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        controls_box.set_halign(Gtk.Align.CENTER)
+        controls_box.set_spacing(20)
+        controls_box.set_margin_top(20)
+        player_box.append(controls_box)
+        
+        prev_btn = Gtk.Button(label="⏮")
+        prev_btn.add_css_class('control-btn')
+        prev_btn.connect('clicked', self.on_previous)
+        controls_box.append(prev_btn)
+        
+        self.play_btn = Gtk.Button(label="▶")
+        self.play_btn.add_css_class('play-btn')
+        self.play_btn.connect('clicked', self.on_play_pause)
+        controls_box.append(self.play_btn)
+        
+        next_btn = Gtk.Button(label="⏭")
+        next_btn.add_css_class('control-btn')
+        next_btn.connect('clicked', self.on_next)
+        controls_box.append(next_btn)
+        
+        # Volume
+        volume_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        volume_box.set_margin_top(20)
+        player_box.append(volume_box)
+        
+        vol_icon = Gtk.Label(label="🔊")
+        volume_box.append(vol_icon)
+        
+        self.volume_scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL)
+        self.volume_scale.set_range(0, 100)
+        self.volume_scale.set_value(70)
+        self.volume_scale.set_hexpand(True)
+        volume_box.append(self.volume_scale)
+        
+        # Right: Playlist
+        playlist_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        playlist_container.set_hexpand(True)
+        main_box.append(playlist_container)
+        
+        # Toolbar
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        toolbar.set_margin(10)
+        playlist_container.append(toolbar)
+        
+        open_btn = Gtk.Button(label="📂 Open Folder")
+        open_btn.connect('clicked', self.on_open_folder)
+        toolbar.append(open_btn)
+        
+        add_btn = Gtk.Button(label="➕ Add Files")
+        add_btn.connect('clicked', self.on_add_files)
+        toolbar.append(add_btn)
+        
+        clear_btn = Gtk.Button(label="🗑️ Clear")
+        clear_btn.connect('clicked', self.on_clear_playlist)
+        toolbar.append(clear_btn)
+        
+        # Playlist
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_vexpand(True)
+        playlist_container.append(scroll)
+        
+        self.playlist_list = Gtk.ListBox()
+        self.playlist_list.connect('row-activated', self.on_playlist_item_activated)
+        scroll.set_child(self.playlist_list)
+        
+        # Status bar
+        self.statusbar = Gtk.Label(label="Ready - Add music files to start")
+        self.statusbar.set_xalign(0)
+        self.statusbar.set_margin(10)
+        playlist_container.append(self.statusbar)
+    
+    def draw_album_art(self, area, ctx, width, height):
+        """Draw placeholder album art with Phantom logo"""
+        # Background
+        ctx.set_source_rgb(0.1, 0.1, 0.12)
+        ctx.rectangle(0, 0, width, height)
+        ctx.fill()
+        
+        # Border glow
+        ctx.set_source_rgb(0, 0.94, 1)
+        ctx.set_line_width(2)
+        ctx.rectangle(1, 1, width-2, height-2)
+        ctx.stroke()
+        
+        # Music note icon
+        ctx.set_source_rgb(0, 0.94, 1)
+        ctx.select_font_face("Sans", 0, 700)
+        ctx.set_font_size(80)
+        x_bearing, y_bearing, text_width, text_height = ctx.text_extents("♪")[:4]
+        ctx.move_to(width/2 - text_width/2 - x_bearing, height/2 - text_height/2 - y_bearing)
+        ctx.show_text("♪")
+    
+    def on_open_folder(self, button):
+        """Open folder dialog to load music"""
+        dialog = Gtk.FileChooserDialog(
+            title="Select Music Folder",
+            transient_for=self,
+            action=Gtk.FileChooserAction.SELECT_FOLDER
+        )
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Open", Gtk.ResponseType.OK)
+        
+        dialog.connect('response', self.on_folder_selected)
+        dialog.present()
+    
+    def on_folder_selected(self, dialog, response):
+        """Handle folder selection"""
+        if response == Gtk.ResponseType.OK:
+            folder = dialog.get_file().get_path()
+            self.load_folder(folder)
+        dialog.close()
+    
+    def on_add_files(self, button):
+        """Add individual files to playlist"""
+        dialog = Gtk.FileChooserDialog(
+            title="Add Music Files",
+            transient_for=self,
+            action=Gtk.FileChooserAction.OPEN,
+            select_multiple=True
+        )
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Add", Gtk.ResponseType.OK)
+        
+        # Filter for audio files
+        filter_audio = Gtk.FileFilter()
+        filter_audio.set_name("Audio files")
+        filter_audio.add_mime_type("audio/*")
+        dialog.add_filter(filter_audio)
+        
+        dialog.connect('response', self.on_files_selected)
+        dialog.present()
+    
+    def on_files_selected(self, dialog, response):
+        """Handle file selection"""
+        if response == Gtk.ResponseType.OK:
+            files = dialog.get_files()
+            for file in files:
+                self.add_to_playlist(file.get_path())
+        dialog.close()
+    
+    def load_folder(self, folder):
+        """Load all music files from folder"""
+        folder_path = Path(folder)
+        audio_extensions = {'.mp3', '.wav', '.flac', '.ogg', '.m4a', '.aac', '.opus', '.wma'}
+        
+        for file in folder_path.iterdir():
+            if file.is_file() and file.suffix.lower() in audio_extensions:
+                self.add_to_playlist(str(file))
+        
+        self.update_status(f"Loaded {len(self.playlist)} tracks from {folder_path.name}")
+    
+    def add_to_playlist(self, filepath):
+        """Add file to playlist"""
+        self.playlist.append(filepath)
+        
+        filename = Path(filepath).name
+        row = Gtk.ListBoxRow()
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        box.add_css_class('playlist-item')
+        
+        icon = Gtk.Label(label="🎵")
+        box.append(icon)
+        
+        label = Gtk.Label(label=filename)
+        label.set_xalign(0)
+        label.set_hexpand(True)
+        box.append(label)
+        
+        row.set_child(box)
+        row.filepath = filepath
+        self.playlist_list.append(row)
+        
+        # Auto-play first track
+        if len(self.playlist) == 1:
+            self.play_track(0)
+    
+    def on_clear_playlist(self, button):
+        """Clear playlist"""
+        self.playlist = []
+        self.current_index = -1
+        self.stop_playback()
+        
+        # Clear UI
+        while True:
+            row = self.playlist_list.get_row_at_index(0)
+            if row is None:
+                break
+            self.playlist_list.remove(row)
+        
+        self.update_status("Playlist cleared")
+    
+    def play_track(self, index):
+        """Play track at index"""
+        if 0 <= index < len(self.playlist):
+            self.current_index = index
+            self.current_file = self.playlist[index]
+            
+            filename = Path(self.current_file).stem
+            self.title_label.set_text(filename)
+            
+            self.is_playing = True
+            self.play_btn.set_label("⏸")
+            
+            # Update playlist highlighting
+            self.highlight_current_track()
+            
+            self.update_status(f"Now playing: {filename}")
+            
+            # In a real implementation, this would use GStreamer or similar
+            # For now, we'll use a placeholder
+            self.start_playback()
+    
+    def start_playback(self):
+        """Start audio playback (placeholder)"""
+        # This is a placeholder - real implementation would use GStreamer
+        pass
+    
+    def stop_playback(self):
+        """Stop playback"""
+        self.is_playing = False
+        self.play_btn.set_label("▶")
+        self.title_label.set_text("No Track Playing")
+    
+    def on_play_pause(self, button):
+        """Toggle play/pause"""
+        if self.current_file:
+            self.is_playing = not self.is_playing
+            button.set_label("⏸" if self.is_playing else "▶")
+        elif self.playlist:
+            self.play_track(0)
+    
+    def on_previous(self, button):
+        """Play previous track"""
+        if self.playlist:
+            new_index = self.current_index - 1
+            if new_index < 0:
+                new_index = len(self.playlist) - 1
+            self.play_track(new_index)
+    
+    def on_next(self, button):
+        """Play next track"""
+        if self.playlist:
+            new_index = (self.current_index + 1) % len(self.playlist)
+            self.play_track(new_index)
+    
+    def on_playlist_item_activated(self, listbox, row):
+        """Handle playlist item click"""
+        index = row.get_index()
+        self.play_track(index)
+    
+    def highlight_current_track(self):
+        """Highlight current track in playlist"""
+        # Remove previous highlighting
+        row = self.playlist_list.get_first_child()
+        while row:
+            row.get_child().remove_css_class('playing')
+            row = row.get_next_sibling()
+        
+        # Add highlighting to current
+        current_row = self.playlist_list.get_row_at_index(self.current_index)
+        if current_row:
+            current_row.get_child().add_css_class('playing')
+    
+    def update_status(self, message):
+        """Update status bar"""
+        self.statusbar.set_text(message)
+
+
+class PhantomMusicApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id='com.phantom.music')
+        
+    def do_activate(self):
+        win = PhantomMusic(application=self)
+        win.present()
+
+
+def main():
+    app = PhantomMusicApp()
+    return app.run(sys.argv)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

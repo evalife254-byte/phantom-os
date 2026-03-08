@@ -1,0 +1,195 @@
+/* Phantom Browser - Ghost Protocol Theme for Firefox UI */
+/* userChrome.css - Customizes Firefox interface */
+
+:root {
+  --phantom-bg: #0A0A0F;
+  --phantom-surface: #141420;
+  --phantom-panel: #1A1A2E;
+  --phantom-accent: #00F0FF;
+  --phantom-accent-secondary: #7B68EE;
+  --phantom-text: #E0E0E8;
+  --phantom-text-secondary: #6B6B80;
+  --phantom-border: rgba(0, 240, 255, 0.3);
+}
+
+/* Main browser background */
+#main-window,
+#navigator-toolbox {
+  background-color: var(--phantom-bg) !important;
+}
+
+/* Toolbar */
+#nav-bar {
+  background-color: var(--phantom-panel) !important;
+  border-bottom: 1px solid var(--phantom-accent) !important;
+  color: var(--phantom-text) !important;
+}
+
+/* URL bar */
+#urlbar,
+#urlbar-background {
+  background-color: var(--phantom-surface) !important;
+  border: 1px solid var(--phantom-border) !important;
+  border-radius: 8px !important;
+  color: var(--phantom-text) !important;
+}
+
+#urlbar:focus-within {
+  border-color: var(--phantom-accent) !important;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3) !important;
+}
+
+/* URL bar text */
+#urlbar-input {
+  color: var(--phantom-text) !important;
+}
+
+/* Search suggestions */
+#urlbar-results {
+  background-color: var(--phantom-surface) !important;
+  border: 1px solid var(--phantom-border) !important;
+  color: var(--phantom-text) !important;
+}
+
+.urlbarView-row:hover {
+  background-color: rgba(0, 240, 255, 0.1) !important;
+}
+
+.urlbarView-row[selected] {
+  background-color: rgba(0, 240, 255, 0.2) !important;
+}
+
+/* Tabs */
+.tabbrowser-tab {
+  background-color: var(--phantom-surface) !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px 8px 0 0 !important;
+  margin: 0 2px !important;
+  color: var(--phantom-text-secondary) !important;
+}
+
+.tabbrowser-tab:hover {
+  background-color: var(--phantom-panel) !important;
+  border-color: var(--phantom-border) !important;
+}
+
+.tabbrowser-tab[selected] {
+  background-color: var(--phantom-panel) !important;
+  border-color: var(--phantom-accent) !important;
+  border-bottom: 2px solid var(--phantom-accent) !important;
+  color: var(--phantom-text) !important;
+}
+
+/* Tab text */
+.tab-label {
+  color: inherit !important;
+}
+
+/* Tab close button */
+.tab-close-button {
+  color: var(--phantom-text-secondary) !important;
+}
+
+.tab-close-button:hover {
+  background-color: rgba(255, 107, 107, 0.2) !important;
+  color: #FF6B6B !important;
+}
+
+/* New tab button */
+#tabs-newtab-button {
+  background-color: var(--phantom-surface) !important;
+  border: 1px solid var(--phantom-border) !important;
+  border-radius: 8px !important;
+  color: var(--phantom-accent) !important;
+}
+
+#tabs-newtab-button:hover {
+  background-color: rgba(0, 240, 255, 0.1) !important;
+}
+
+/* Buttons */
+toolbarbutton {
+  color: var(--phantom-text) !important;
+}
+
+toolbarbutton:hover {
+  background-color: rgba(0, 240, 255, 0.1) !important;
+  border-radius: 6px !important;
+}
+
+/* Sidebar */
+#sidebar-box {
+  background-color: var(--phantom-surface) !important;
+  border-right: 1px solid var(--phantom-border) !important;
+}
+
+#sidebar-header {
+  background-color: var(--phantom-panel) !important;
+  border-bottom: 1px solid var(--phantom-accent) !important;
+  color: var(--phantom-text) !important;
+}
+
+/* Context menus */
+menupopup,
+panel {
+  background-color: var(--phantom-panel) !important;
+  border: 1px solid var(--phantom-border) !important;
+  border-radius: 8px !important;
+  color: var(--phantom-text) !important;
+}
+
+menuitem:hover,
+menu:hover {
+  background-color: rgba(0, 240, 255, 0.15) !important;
+  color: var(--phantom-accent) !important;
+}
+
+/* Scrollbars */
+scrollbar {
+  background-color: var(--phantom-surface) !important;
+}
+
+thumb {
+  background-color: var(--phantom-accent) !important;
+  border-radius: 4px !important;
+  opacity: 0.5;
+}
+
+thumb:hover {
+  opacity: 0.8;
+}
+
+/* Bookmarks toolbar */
+#PersonalToolbar {
+  background-color: var(--phantom-surface) !important;
+  border-bottom: 1px solid var(--phantom-border) !important;
+}
+
+.bookmark-item {
+  color: var(--phantom-text) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+}
+
+.bookmark-item:hover {
+  background-color: rgba(0, 240, 255, 0.1) !important;
+}
+
+/* Downloads button */
+#downloads-button[attention] {
+  color: var(--phantom-accent) !important;
+}
+
+/* Find bar */
+.findbar-textbox {
+  background-color: var(--phantom-surface) !important;
+  border: 1px solid var(--phantom-border) !important;
+  color: var(--phantom-text) !important;
+}
+
+/* Notification bar */
+notification {
+  background-color: var(--phantom-panel) !important;
+  border: 1px solid var(--phantom-accent) !important;
+  color: var(--phantom-text) !important;
+}

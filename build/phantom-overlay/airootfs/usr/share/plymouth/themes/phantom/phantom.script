@@ -1,0 +1,191 @@
+# Phantom OS Plymouth Boot Splash
+# Theme: Ghost Protocol - Particle Assembly Animation
+
+# Screen setup
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+center_x = screen_width / 2;
+center_y = screen_height / 2;
+
+# Colors (Ghost Protocol)
+bg_color.red = 0.039;    # #0A0A0F
+bg_color.green = 0.039;
+bg_color.blue = 0.059;
+
+accent_color.red = 0.0;   # #00F0FF
+accent_color.green = 0.941;
+accent_color.blue = 1.0;
+
+text_color.red = 0.878;   # #E0E0E8
+text_color.green = 0.878;
+text_color.blue = 0.910;
+
+# Background
+Window.SetBackgroundTopColor(bg_color.red, bg_color.green, bg_color.blue);
+Window.SetBackgroundBottomColor(bg_color.red, bg_color.green, bg_color.blue);
+
+# Logo - drawn as text/shapes instead of image
+logo_text = Image.Text("◉", accent_color.red, accent_color.green, accent_color.blue, 1, "Sans 72");
+logo_sprite = Sprite(logo_text);
+logo_sprite.SetX(center_x - logo_text.GetWidth() / 2);
+logo_sprite.SetY(center_y - 150);
+logo_sprite.SetOpacity(0);
+
+# Phantom text
+phantom_text = Image.Text("PHANTOM OS", text_color.red, text_color.green, text_color.blue, 1, "Sans Bold 24");
+phantom_sprite = Sprite(phantom_text);
+phantom_sprite.SetX(center_x - phantom_text.GetWidth() / 2);
+phantom_sprite.SetY(center_y + 50);
+phantom_sprite.SetOpacity(0);
+
+# Version text
+version_text = Image.Text("v0.1.0 • ghost-protocol", text_color.red * 0.7, text_color.green * 0.7, text_color.blue * 0.7, 1, "Sans 12");
+version_sprite = Sprite(version_text);
+version_sprite.SetX(center_x - version_text.GetWidth() / 2);
+version_sprite.SetY(center_y + 85);
+version_sprite.SetOpacity(0);
+
+# Particle system - using small dots instead of images
+particle_count = 30;
+particles = [];
+
+for (i = 0; i < particle_count; i++) {
+    particles[i].x = Math.Random() * screen_width;
+    particles[i].y = Math.Random() * screen_height;
+    particles[i].vx = (Math.Random() - 0.5) * 2;
+    particles[i].vy = (Math.Random() - 0.5) * 2;
+    particles[i].size = Math.Random() * 3 + 1;
+    particles[i].opacity = Math.Random() * 0.5 + 0.3;
+    
+    # Create particle as small text dot
+    particles[i].image = Image.Text("●", accent_color.red, accent_color.green, accent_color.blue, 1, "Sans " + particles[i].size * 3);
+    particles[i].sprite = Sprite(particles[i].image);
+    particles[i].sprite.SetOpacity(particles[i].opacity);
+}
+
+# Progress bar - drawn with sprites instead of images
+progress_bar.width = 400;
+progress_bar.height = 4;
+progress_bar.x = center_x - progress_bar.width / 2;
+progress_bar.y = center_y + 120;
+
+# Progress bar background (dark)
+progress_bg_text = Image.Text("█" * 50, bg_color.red + 0.1, bg_color.green + 0.1, bg_color.blue + 0.1, 1, "Sans 8");
+progress_bg_sprite = Sprite(progress_bg_text);
+progress_bg_sprite.SetX(progress_bar.x);
+progress_bg_sprite.SetY(progress_bar.y);
+
+# Progress bar fill (accent color)
+progress_fill_text = Image.Text("█" * 50, accent_color.red, accent_color.green, accent_color.blue, 1, "Sans 8");
+progress_fill_sprite = Sprite(progress_fill_text);
+progress_fill_sprite.SetX(progress_bar.x);
+progress_fill_sprite.SetY(progress_bar.y);
+progress_fill_sprite.SetOpacity(0);
+
+# Animation state
+animation_time = 0;
+fade_in_duration = 60; # frames
+
+# Refresh function (called every frame)
+fun refresh_callback() {
+    animation_time++;
+    
+    # Fade in logo and text
+    if (animation_time < fade_in_duration) {
+        opacity = animation_time / fade_in_duration;
+        logo.sprite.SetOpacity(opacity);
+        phantom_sprite.SetOpacity(opacity);
+        version_sprite.SetOpacity(opacity * 0.7);
+    }
+    
+    # Update particles
+    for (i = 0; i < particle_count; i++) {
+        # Move particle
+        particles[i].x += particles[i].vx;
+        particles[i].y += particles[i].vy;
+        
+        # Wrap around screen
+        if (particles[i].x < 0) particles[i].x = screen_width;
+        if (particles[i].x > screen_width) particles[i].x = 0;
+        if (particles[i].y < 0) particles[i].y = screen_height;
+        if (particles[i].y > screen_height) particles[i].y = 0;
+        
+        # Update sprite position
+        particles[i].sprite.SetX(particles[i].x);
+        particles[i].sprite.SetY(particles[i].y);
+        
+        # Pulse opacity
+        pulse = Math.Sin(animation_time * 0.05 + i) * 0.2 + 0.8;
+        particles[i].sprite.SetOpacity(particles[i].opacity * pulse);
+    }
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# Boot progress callback
+fun progress_callback(duration, progress) {
+    if (progress >= 0 && progress <= 1) {
+        fill_width = progress_bar.width * progress;
+        progress_fill_sprite.SetImage(progress_fill.Scale(fill_width, progress_bar.height));
+    }
+}
+
+Plymouth.SetBootProgressFunction(progress_callback);
+
+# Message callback
+message_sprite = Sprite();
+message_sprite.SetPosition(center_x, center_y + 160, 10000);
+
+fun message_callback(text) {
+    if (text != "") {
+        message_image = Image.Text(text, text_color.red * 0.8, text_color.green * 0.8, text_color.blue * 0.8, 1, "Sans 11");
+        message_sprite.SetImage(message_image);
+        message_sprite.SetX(center_x - message_image.GetWidth() / 2);
+    } else {
+        message_sprite.SetImage(Image());
+    }
+}
+
+Plymouth.SetMessageFunction(message_callback);
+
+# Display normal/password mode
+fun display_normal_callback() {
+    message_sprite.SetOpacity(1);
+}
+
+fun display_password_callback(prompt, bullets) {
+    message_sprite.SetOpacity(0);
+    
+    # Show password prompt
+    prompt_image = Image.Text(prompt, text_color.red, text_color.green, text_color.blue, 1, "Sans 12");
+    prompt_sprite = Sprite(prompt_image);
+    prompt_sprite.SetX(center_x - prompt_image.GetWidth() / 2);
+    prompt_sprite.SetY(center_y + 160);
+    
+    # Show bullets
+    bullets_text = "";
+    for (i = 0; i < bullets; i++) {
+        bullets_text += "•";
+    }
+    
+    bullets_image = Image.Text(bullets_text, accent_color.red, accent_color.green, accent_color.blue, 1, "Sans 16");
+    bullets_sprite = Sprite(bullets_image);
+    bullets_sprite.SetX(center_x - bullets_image.GetWidth() / 2);
+    bullets_sprite.SetY(center_y + 185);
+}
+
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+# Quit callback
+fun quit_callback() {
+    # Fade out animation
+    for (i = 0; i < 30; i++) {
+        opacity = 1 - (i / 30);
+        logo.sprite.SetOpacity(opacity);
+        phantom_sprite.SetOpacity(opacity);
+        version_sprite.SetOpacity(opacity);
+    }
+}
+
+Plymouth.SetQuitFunction(quit_callback);

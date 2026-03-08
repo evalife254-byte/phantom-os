@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Phantom
+Description=Phantom OS boot splash with Ghost Protocol theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/phantom
+ScriptFile=/usr/share/plymouth/themes/phantom/phantom.script

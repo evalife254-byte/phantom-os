@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Image file - purple accent -->
+  <path d="M 12 6 L 12 42 L 36 42 L 36 16 L 26 6 Z" 
+        fill="#141420" 
+        stroke="#7B68EE" 
+        stroke-width="1.5"/>
+  
+  <path d="M 26 6 L 26 16 L 36 16" 
+        fill="#1A1A2E" 
+        stroke="#7B68EE" 
+        stroke-width="1.5"/>
+  
+  <!-- Image icon -->
+  <rect x="18" y="22" width="12" height="10" fill="none" stroke="#7B68EE" stroke-width="1.5"/>
+  <circle cx="21" cy="26" r="1.5" fill="#7B68EE"/>
+  <polyline points="18,30 22,26 26,30 30,26" fill="none" stroke="#7B68EE" stroke-width="1.5"/>
+</svg>

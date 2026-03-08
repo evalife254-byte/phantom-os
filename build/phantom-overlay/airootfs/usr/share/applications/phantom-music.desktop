@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Phantom Music
+Comment=Music player for Phantom OS
+Exec=phantom-music
+Icon=phantom-music
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=music;audio;player;mp3;flac;
+StartupNotify=true
+MimeType=audio/mpeg;audio/flac;audio/ogg;audio/x-wav;audio/x-m4a;
