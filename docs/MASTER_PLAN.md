@@ -11,7 +11,7 @@
 | 1 | DE Baseline & Overlay | **IN PROGRESS** | Hyprland config, Waybar, Rofi, Mako, theme.json, packages list, validation script, ISO build pipeline |
 | 2 | Three-Capsule Panel & Dock | NOT STARTED | Waybar three-zone layout (left/center/right capsules), floating glass dock, expanded dropdowns |
 | 3 | Theme System & Settings | NOT STARTED | `phantom-theme` CLI, GUI theme editor, preset themes (Specter, Wraith, Eclipse, Daylight) |
-| 4 | Lock & Login Screens | NOT STARTED | SDDM branded theme (split layout), hyprlock config, boot splash (Particle Assembly / Phantom Fade) |
+| 4 | Lock & Login Screens | **IN PROGRESS** | SDDM branded theme (split layout), hyprlock config, boot splash (Particle Assembly / Phantom Fade) |
 | 5 | Phantom Files | NOT STARTED | Custom file manager (GTK4/Qt6), dual-pane, tags, preview, integrated terminal, hex view |
 | 6 | Browser, Code & Media Apps | NOT STARTED | Phantom Browser (Firefox fork), Phantom Code (VS Code fork), Phantom Music, Phantom Video |
 | 7 | Phantom Office | NOT STARTED | LibreOffice fork with modernized Phantom-themed UX |
@@ -83,13 +83,29 @@ build/phantom-overlay/
 
 ---
 
-## Phase 4 — Lock & Login Screens
+## Phase 4 — Lock & Login Screens (IN PROGRESS)
 
 ### Deliverables
-- SDDM branded theme (split layout: branding + login form)
-- `hyprlock.conf` with wallpaper hooks
-- Boot splash animations (Particle Assembly / Phantom Fade)
-- Lock screen: battery, notifications, now playing
+- [x] SDDM branded theme (split layout: branding + login form)
+  - `Main.qml` — left panel (branding + clock), right panel (login form + power buttons)
+  - `theme.conf` — Ghost Protocol color palette, font, clock/date format
+  - `metadata.desktop` — theme metadata for SDDM
+  - SDDM config (`/etc/sddm.conf.d/phantom.conf`) to select phantom theme
+  - systemd symlink to enable SDDM as display manager
+- [ ] `hyprlock.conf` with wallpaper hooks
+- [ ] Boot splash animations (Particle Assembly / Phantom Fade)
+- [ ] Lock screen: battery, notifications, now playing
+
+### Key Files
+```
+build/phantom-overlay/
+  airootfs/usr/share/sddm/themes/phantom/
+    Main.qml
+    metadata.desktop
+    theme.conf
+  airootfs/etc/sddm.conf.d/phantom.conf
+  airootfs/etc/systemd/system/display-manager.service -> sddm.service
+```
 
 ---
 
