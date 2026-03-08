@@ -1,0 +1,11 @@
+[SddmGreeterTheme]
+Name=Phantom
+Description=Ghost Protocol theme for Phantom OS — split layout with branding and neon-dark colors
+Author=Phantom OS Project
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=0.1.0
+Website=https://github.com/copilot7854-lab/phantom-os
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=phantom

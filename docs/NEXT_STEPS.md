@@ -21,9 +21,10 @@ This file tracks concrete execution after the v1 DE scaffold.
 
 ## Next 1–2 sprints
 
-1. **SDDM branding theme**
-   - Create `build/phantom-overlay/airootfs/usr/share/sddm/themes/phantom/`
-   - Ship split layout + Ghost Protocol colors
+1. **SDDM branding theme** — **DONE**
+   - Created `build/phantom-overlay/airootfs/usr/share/sddm/themes/phantom/` (Main.qml, metadata.desktop, theme.conf)
+   - Split layout: left panel (branding + clock), right panel (login form + power buttons)
+   - Ghost Protocol colors, SDDM config + systemd service enablement
 
 2. **Dock implementation**
    - Add baseline dock package and config (Wayland-native)
