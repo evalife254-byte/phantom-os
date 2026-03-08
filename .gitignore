@@ -1,4 +1,8 @@
 .cache/
 build/archiso-profile/
+build/swapfile
+build/work/
+build/pacman-cache/
+build/*.log
 work/
 out/
