@@ -73,18 +73,34 @@ jobs:
         if: always()
         run: docker stop archiso-builder && docker rm archiso-builder
 
+      - name: Verify build output
+        run: |
+          echo "Checking for build output..."
+          ls -lah out/ || echo "out/ directory not found"
+          ls -lah work/ || echo "work/ directory not found"
+
       - name: Get ISO filename
         id: iso
         run: |
-          ISO_FILE=$(ls out/*.iso | head -n1)
-          echo "filename=$(basename $ISO_FILE)" >> $GITHUB_OUTPUT
-          echo "path=$ISO_FILE" >> $GITHUB_OUTPUT
+          if [ -d out ] && [ -f out/*.iso ]; then
+            ISO_FILE=$(ls out/*.iso | head -n1)
+            echo "filename=$(basename $ISO_FILE)" >> $GITHUB_OUTPUT
+            echo "path=$ISO_FILE" >> $GITHUB_OUTPUT
+          else
+            echo "ERROR: No ISO file found in out/ directory"
+            exit 1
+          fi
 
       - name: Generate checksums
         run: |
-          cd out
-          sha256sum *.iso > SHA256SUMS
-          md5sum *.iso > MD5SUMS
+          if [ -d out ]; then
+            cd out
+            sha256sum *.iso > SHA256SUMS
+            md5sum *.iso > MD5SUMS
+          else
+            echo "ERROR: out/ directory not found"
+            exit 1
+          fi
 
       - name: Upload ISO artifact
         if: github.event.inputs.skip_upload != 'true'
