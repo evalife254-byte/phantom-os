@@ -45,6 +45,7 @@ jobs:
       - name: Build ISO
         run: |
           docker exec archiso-builder bash -c "
+            set -e
             # Low-RAM optimizations for GitHub Actions (7GB RAM)
             export XZ_OPT='-T2 -9 --memlimit-compress=1024MiB'
             export ZSTD_CLEVEL=19
@@ -54,20 +55,26 @@ jobs:
             # Create swap space if not already active
             if ! swapon --show | grep -q /swapfile; then
               if [ ! -f /swapfile ]; then
+                echo 'Creating swap file...'
                 fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
                 chmod 600 /swapfile
                 mkswap /swapfile
               fi
               swapon /swapfile
+              echo 'Swap activated'
             fi
             
             # Build with verbose output
+            echo 'Starting mkarchiso build...'
             mkarchiso -v -w ./work -o ./out ./build/archiso-profile
+            
+            echo 'Build completed, checking output...'
+            ls -lah ./out/
             
             # Remove swap
             swapoff /swapfile || true
             rm -f /swapfile
-          "
+          " || exit 1
 
       - name: Stop container
         if: always()
