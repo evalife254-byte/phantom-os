@@ -1,0 +1,68 @@
+/* Phantom OS — nwg-dock-hyprland stylesheet
+ * Theme: Ghost Protocol
+ * Floating glass capsule dock with neon-dark colors
+ */
+
+/* Dock window — transparent background for floating effect */
+window {
+    background: rgba(10, 10, 15, 0.0);
+    border: none;
+    border-radius: 0;
+}
+
+/* Main dock container — floating glass capsule */
+#box {
+    background: rgba(26, 26, 46, 0.80);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 16px;
+    padding: 4px 8px;
+    margin: 0;
+}
+
+/* All dock buttons — base styling */
+button {
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    padding: 4px;
+    margin: 2px;
+    transition: 200ms ease;
+}
+
+button:hover {
+    background: rgba(0, 240, 255, 0.15);
+}
+
+/* Active/focused application button */
+button#active {
+    background: rgba(0, 240, 255, 0.10);
+    border-bottom: 2px solid #00F0FF;
+}
+
+button#active:hover {
+    background: rgba(0, 240, 255, 0.20);
+}
+
+/* Pinned application buttons */
+button#pinned {
+    background: transparent;
+}
+
+button#pinned:hover {
+    background: rgba(0, 240, 255, 0.12);
+}
+
+/* Launcher button (opens app drawer) */
+button#launcher {
+    background: transparent;
+}
+
+button#launcher:hover {
+    background: rgba(123, 104, 238, 0.15);
+}
+
+/* Application icons */
+image {
+    -gtk-icon-effect: none;
+    padding: 2px;
+}

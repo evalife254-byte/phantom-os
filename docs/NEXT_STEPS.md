@@ -26,9 +26,10 @@ This file tracks concrete execution after the v1 DE scaffold.
    - Split layout: left panel (branding + clock), right panel (login form + power buttons)
    - Ghost Protocol colors, SDDM config + systemd service enablement
 
-2. **Dock implementation**
-   - Add baseline dock package and config (Wayland-native)
-   - Match floating glass style with toggles
+2. **Dock implementation** — **DONE**
+   - Added `nwg-dock-hyprland` package + Ghost Protocol CSS styling
+   - Floating glass capsule dock with blur, centered, auto-hide
+   - Autostart in hyprland.conf, launcher wired to rofi
 
 3. **Lock-screen polish**
    - Add `hyprlock.conf` + wallpaper hooks
