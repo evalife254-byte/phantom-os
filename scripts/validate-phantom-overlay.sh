@@ -59,7 +59,7 @@ for file in "${required_files[@]}"; do
 done
 
 echo "[validate] Validating JSON files"
-python - <<'PY'
+python3 - <<'PY'
 import json
 from pathlib import Path
 
