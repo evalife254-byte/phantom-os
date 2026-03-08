@@ -1,11 +1,13 @@
 # Phantom OS notifications (mako)
-font=JetBrainsMono Nerd Font 10
-background-color=#1A1A2EDD
+# Theme: Ghost Protocol
+
+background-color=#1A1A2Eee
 text-color=#E0E0E8
 border-color=#00F0FF
-progress-color=over #7B68EE
-border-size=2
 border-radius=12
+border-size=2
+font=Noto Sans 12
 default-timeout=5000
+width=350
+margin=10
 anchor=top-right
-margin=12

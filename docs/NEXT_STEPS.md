@@ -2,11 +2,20 @@
 
 This file tracks concrete execution after the v1 DE scaffold.
 
+> For the full 12-phase roadmap, see [MASTER_PLAN.md](./MASTER_PLAN.md).
+
 ## Immediate (now)
 
 - [x] Arch base bootstrap script
 - [x] Phantom DE overlay script
-- [x] Phantom DE baseline configs (Hyprland, Waybar, Rofi, Mako)
+- [x] Phantom DE baseline configs — **real overlay files created** in `build/phantom-overlay/`:
+  - Hyprland (`hyprland.conf`) — monitor, keybinds, gaps, blur, opacity, animations, window/layer rules
+  - Waybar (`config.jsonc` + `style.css`) — single bar Phase 1 layout with Ghost Protocol colors
+  - Rofi (`config.rasi`) — centered launcher with accent theming and search input
+  - Mako (`config`) — notification daemon with panel colors, border-radius, timeout
+  - Theme tokens (`phantom/theme.json`) — Ghost Protocol color palette
+  - Release metadata (`phantom-release`) — version 0.1.0, codename ghost-protocol
+  - Package list (`packages.extra.x86_64`) — 24 packages including Hyprland stack, pipewire, fonts, SDDM
 - [x] End-to-end build wrapper script (`scripts/build-phantom-iso.sh`)
 - [x] Overlay validation script (`scripts/validate-phantom-overlay.sh`)
 

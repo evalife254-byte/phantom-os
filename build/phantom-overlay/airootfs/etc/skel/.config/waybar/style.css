@@ -1,52 +1,56 @@
 * {
   border: none;
-  font-family: "JetBrainsMono Nerd Font", "Noto Sans", sans-serif;
+  font-family: "Noto Sans", sans-serif;
   font-size: 13px;
   min-height: 0;
 }
 
 window#waybar {
-  background: transparent;
-  color: #e0e0e8;
+  background: rgba(10, 10, 15, 0.85);
+  color: #E0E0E8;
 }
 
-#custom-power,
-#custom-user,
 #cpu,
 #memory,
 #battery,
 #network,
 #pulseaudio,
-#custom-night,
-#custom-screenshot,
 #tray,
 #clock {
-  background: rgba(26, 26, 46, 0.82);
-  padding: 8px 10px;
-  border-top: 1px solid rgba(0, 240, 255, 0.35);
-  border-bottom: 1px solid rgba(0, 240, 255, 0.35);
-}
-
-#custom-power,
-#pulseaudio,
-#clock {
-  border-left: 1px solid rgba(0, 240, 255, 0.35);
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-}
-
-#network,
-#tray,
-#clock {
-  border-right: 1px solid rgba(0, 240, 255, 0.35);
-  border-top-right-radius: 16px;
-  border-bottom-right-radius: 16px;
+  padding: 4px 12px;
+  margin: 4px 2px;
+  border-radius: 8px;
+  background: rgba(20, 20, 32, 0.6);
 }
 
 #clock {
+  color: #00F0FF;
+  font-weight: 700;
   padding-left: 16px;
   padding-right: 16px;
-  color: #00f0ff;
-  font-weight: 700;
-  box-shadow: 0 0 14px rgba(123, 104, 238, 0.25);
+}
+
+#cpu:hover,
+#memory:hover,
+#battery:hover,
+#network:hover,
+#pulseaudio:hover {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00F0FF;
+}
+
+#battery.warning {
+  color: #FFD93D;
+}
+
+#battery.critical {
+  color: #FF6B6B;
+}
+
+#network.disconnected {
+  color: #6B6B80;
+}
+
+#pulseaudio.muted {
+  color: #6B6B80;
 }
