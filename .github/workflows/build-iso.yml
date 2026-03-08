@@ -42,17 +42,21 @@ jobs:
           export ZSTD_NBTHREADS=2
           export MAKEFLAGS="-j2"
           
-          # Create swap space if needed
-          fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
-          chmod 600 /swapfile
-          mkswap /swapfile
-          swapon /swapfile
+          # Create swap space if not already active
+          if ! swapon --show | grep -q /swapfile; then
+            if [ ! -f /swapfile ]; then
+              fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
+              chmod 600 /swapfile
+              mkswap /swapfile
+            fi
+            swapon /swapfile
+          fi
           
           # Build with verbose output
           mkarchiso -v -w ./work -o ./out ./build/archiso-profile
           
           # Remove swap
-          swapoff /swapfile
+          swapoff /swapfile || true
           rm -f /swapfile
 
       - name: Get ISO filename
