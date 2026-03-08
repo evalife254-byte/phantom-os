@@ -42,8 +42,7 @@
 
   "pulseaudio": {
     "format": " {volume}%",
-    "format-muted": " muted",
-    "on-click": "pavucontrol"
+    "format-muted": " muted"
   },
   "tray": {
     "spacing": 10
