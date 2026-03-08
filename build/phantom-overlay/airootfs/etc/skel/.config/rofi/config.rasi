@@ -4,6 +4,7 @@ configuration {
   display-drun: "Apps";
   drun-display-format: "{name}";
   hover-select: true;
+  font: "Noto Sans 14";
 }
 
 * {
@@ -22,6 +23,8 @@ window {
   border-color: @accent;
   border-radius: 18px;
   background-color: @bg;
+  location: center;
+  anchor: center;
 }
 
 inputbar {
@@ -30,6 +33,20 @@ inputbar {
   border-radius: 14px;
   padding: 12px;
   margin: 12px;
+  children: [ prompt, entry ];
+}
+
+prompt {
+  background-color: transparent;
+  text-color: @accent;
+  padding: 0 8px 0 0;
+}
+
+entry {
+  background-color: transparent;
+  text-color: @fg;
+  placeholder: "Search...";
+  placeholder-color: @muted;
 }
 
 listview {
@@ -43,9 +60,21 @@ listview {
 element {
   border-radius: 12px;
   padding: 10px;
+  background-color: transparent;
+  text-color: @fg;
 }
 
 element selected {
   background-color: @accent2;
   text-color: @fg;
+}
+
+element-icon {
+  size: 32px;
+  background-color: transparent;
+}
+
+element-text {
+  background-color: transparent;
+  text-color: inherit;
 }

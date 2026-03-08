@@ -1,31 +1,19 @@
 {
   "layer": "top",
   "position": "top",
-  "height": 42,
-  "margin-top": 10,
-  "margin-left": 10,
-  "margin-right": 10,
-  "spacing": 14,
+  "height": 36,
 
-  "modules-left": ["custom/power", "custom/user", "cpu", "memory", "battery", "network"],
+  "modules-left": ["cpu", "memory", "battery", "network"],
   "modules-center": ["clock"],
-  "modules-right": ["pulseaudio", "custom/night", "custom/screenshot", "tray"],
+  "modules-right": ["pulseaudio", "tray"],
 
-  "custom/power": {
-    "format": "⏻",
-    "tooltip": false
-  },
-  "custom/user": {
-    "format": "👤",
-    "tooltip": false
-  },
   "cpu": {
-    "format": " {usage}%",
+    "format": " {usage}%",
     "tooltip": true,
     "interval": 2
   },
   "memory": {
-    "format": " {}%",
+    "format": " {}%",
     "interval": 2
   },
   "battery": {
@@ -34,16 +22,16 @@
       "critical": 10
     },
     "format": "{icon} {capacity}%",
-    "format-icons": ["", "", "", "", ""]
+    "format-icons": ["", "", "", "", ""]
   },
   "network": {
-    "format-wifi": " {essid}",
-    "format-ethernet": "󰈀",
-    "format-disconnected": "󰖪"
+    "format-wifi": " {essid}",
+    "format-ethernet": "󰈀 Connected",
+    "format-disconnected": "󰖪 Disconnected"
   },
 
   "clock": {
-    "format": "{:%a %d %b · %I:%M %p}",
+    "format": "%H:%M  %a %b %d",
     "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
     "calendar": {
       "mode": "month",
@@ -53,17 +41,8 @@
   },
 
   "pulseaudio": {
-    "format": " {volume}%",
-    "format-muted": " muted",
-    "on-click": "pavucontrol"
-  },
-  "custom/night": {
-    "format": "🌙",
-    "tooltip": false
-  },
-  "custom/screenshot": {
-    "format": "📸",
-    "tooltip": false
+    "format": " {volume}%",
+    "format-muted": " muted"
   },
   "tray": {
     "spacing": 10
