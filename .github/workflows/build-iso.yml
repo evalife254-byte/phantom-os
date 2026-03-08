@@ -23,7 +23,7 @@ jobs:
       - name: Update system and install dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --noconfirm archiso git base-devel
+          pacman -S --noconfirm archiso git base-devel python
 
       - name: Run bootstrap
         run: ./scripts/bootstrap-phantom-v1.sh
